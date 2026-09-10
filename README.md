@@ -1,30 +1,52 @@
-# FastAPI PostgreSQL CRUD
+# FastAPI PostgreSQL CRUD API
 
-Simple CRUD API built with FastAPI, PostgreSQL and SQLAlchemy.
+![Tests](https://github.com/zxnxgstu/fastapi-postgresql-crud/actions/workflows/tests.yml/badge.svg)
 
-## Features
+REST API для управления товарами, созданный на FastAPI с PostgreSQL.
 
-- Get all products
-- Get product by ID
-- Create product
-- Update product
-- Delete product
-- PostgreSQL database
-- SQLAlchemy ORM
-- Swagger documentation
+## Technologies
 
-## Tech Stack
-
-- Python
+- Python 3.13
 - FastAPI
 - PostgreSQL
 - SQLAlchemy
 - Pydantic
-- Uvicorn
+- Alembic
+- Docker
+- Docker Compose
+- Pytest
+- GitHub Actions
 
-## Installation
+## Features
 
-Create and activate virtual environment:
+- Create products
+- Get all products
+- Get product by ID
+- Update products
+- Delete products
+- Search products by name
+- Filter products by stock status
+- Pagination
+- Input validation
+- HTTP error handling
+- Database migrations with Alembic
+- Docker support
+- Automated tests
+- CI with GitHub Actions
 
-```bash
-python -m venv .venv
+## API endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/products` | Get products |
+| GET | `/products/{product_id}` | Get product by ID |
+| POST | `/products` | Create product |
+| PUT | `/products/{product_id}` | Update product |
+| DELETE | `/products/{product_id}` | Delete product |
+
+## Search and pagination
+
+Example:
+
+```text
+GET /products?search=Mouse&in_stock=true&skip=0&limit=10
