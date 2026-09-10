@@ -1,10 +1,12 @@
 from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from schemas import ProductCreate
-from database import SessionLocal
+from schemas import ProductCreate, ProductResponse
+from database import SessionLocal, engine, Base
 from models import Product
 import crud
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -22,12 +24,12 @@ def home():
     return {"message": "Hello from FastAPI"}
 
 
-@app.get("/products")
+@app.get("/products", response_model=list[ProductResponse])
 def get_products(db: Session = Depends(get_db)):
     return crud.get_products(db)
 
 
-@app.get("/products/{product_id}")
+@app.get("/products/{product_id}", response_model=ProductResponse)
 def get_product(product_id: int, db: Session = Depends(get_db)):
     product = crud.get_product(db, product_id)
 
@@ -37,12 +39,12 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     return product
 
 
-@app.post("/products")
+@app.post("/products", response_model=ProductResponse)
 def create_product(product: ProductCreate, db: Session = Depends(get_db)):
     return crud.create_product(db, product)
 
 
-@app.put("/products/{product_id}")
+@app.put("/products/{product_id}", response_model=ProductResponse)
 def update_product(
     product_id: int,
     updated_product: ProductCreate,
