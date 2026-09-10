@@ -18,7 +18,12 @@ REST API для управления товарами, созданный на F
 - GitHub Actions
 
 ## Features
-
+- User registration
+- User login
+- JWT authentication
+- Password hashing
+- Protected product management endpoints
+- Current user endpoint
 - Create products
 - Get all products
 - Get product by ID
@@ -35,7 +40,16 @@ REST API для управления товарами, созданный на F
 - CI with GitHub Actions
 
 ## API endpoints
-
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/register` | Register new user | No |
+| POST | `/login` | Login and get JWT token | No |
+| GET | `/me` | Get current user | Yes |
+| GET | `/products` | Get products | No |
+| GET | `/products/{product_id}` | Get product by ID | No |
+| POST | `/products` | Create product | Yes |
+| PUT | `/products/{product_id}` | Update product | Yes |
+| DELETE | `/products/{product_id}` | Delete product | Yes |
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/products` | Get products |
