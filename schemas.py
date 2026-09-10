@@ -1,9 +1,9 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ProductCreate(BaseModel):
-    name: str
-    price: int
+    name: str = Field(min_length=1, max_length=100)
+    price: int = Field(ge=0)
     in_stock: bool
 
 

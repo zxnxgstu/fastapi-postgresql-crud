@@ -1,53 +1,76 @@
 from sqlalchemy.orm import Session
+
 from models import Product
 from schemas import ProductCreate
 
 
-def get_products(db: Session):
-    return db.query(Product).all()
+def get_products(
+    db: Session,
+    search: str | None = None,
+    in_stock: bool | None = None,
+    skip: int = 0,
+    limit: int = 10
+):
+    query = db.query(Product)
+
+    if search:
+        query = query.filter(Product.name.ilike(f"%{search}%"))
+
+    if in_stock is not None:
+        query = query.filter(Product.in_stock == in_stock)
+
+    return query.offset(skip).limit(limit).all()
 
 
 def get_product(db: Session, product_id: int):
-    return db.query(Product).filter(Product.id == product_id).first()
+    return (
+        db.query(Product)
+        .filter(Product.id == product_id)
+        .first()
+    )
 
 
 def create_product(db: Session, product: ProductCreate):
-    new_product = Product(
+    db_product = Product(
         name=product.name,
         price=product.price,
         in_stock=product.in_stock
     )
 
-    db.add(new_product)
+    db.add(db_product)
     db.commit()
-    db.refresh(new_product)
+    db.refresh(db_product)
 
-    return new_product
+    return db_product
 
 
-def update_product(db: Session, product_id: int, updated_product: ProductCreate):
-    product = db.query(Product).filter(Product.id == product_id).first()
+def update_product(
+    db: Session,
+    product_id: int,
+    updated_product: ProductCreate
+):
+    db_product = get_product(db, product_id)
 
-    if product is None:
+    if db_product is None:
         return None
 
-    product.name = updated_product.name
-    product.price = updated_product.price
-    product.in_stock = updated_product.in_stock
+    db_product.name = updated_product.name
+    db_product.price = updated_product.price
+    db_product.in_stock = updated_product.in_stock
 
     db.commit()
-    db.refresh(product)
+    db.refresh(db_product)
 
-    return product
+    return db_product
 
 
 def delete_product(db: Session, product_id: int):
-    product = db.query(Product).filter(Product.id == product_id).first()
+    db_product = get_product(db, product_id)
 
-    if product is None:
-        return None
+    if db_product is None:
+        return False
 
-    db.delete(product)
+    db.delete(db_product)
     db.commit()
 
-    return product
+    return True
