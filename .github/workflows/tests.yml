@@ -9,7 +9,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
+    env:
+      JWT_SECRET_KEY: "test-secret-key-for-github-actions"
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_shop_db"
+      TEST_DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_shop_db"
     services:
       postgres:
         image: postgres:18
