@@ -29,7 +29,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/shop_db
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY}"
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/shop_db"
     depends_on:
       db:
         condition: service_healthy

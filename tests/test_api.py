@@ -18,14 +18,15 @@ def test_get_products():
     assert isinstance(response.json(), list)
 
 
-def test_create_product_validation():
+def test_create_product_validation(auth_headers):
     response = client.post(
         "/products",
         json={
             "name": "",
             "price": -100,
             "in_stock": True
-        }
+        },
+        headers=auth_headers
     )
 
     assert response.status_code == 422
@@ -40,37 +41,41 @@ def test_get_missing_product():
     }
 
 
-def test_update_missing_product():
+def test_update_missing_product(auth_headers):
     response = client.put(
         "/products/999999",
         json={
-            "name": "Test Product",
+            "name": "Test",
             "price": 100,
             "in_stock": True
-        }
+        },
+        headers=auth_headers
     )
 
     assert response.status_code == 404
 
-
-def test_delete_missing_product():
-    response = client.delete("/products/999999")
+def test_delete_missing_product(auth_headers):
+    response = client.delete(
+        "/products/999999",
+        headers=auth_headers
+    )
 
     assert response.status_code == 404
-def test_full_product_crud():
+    
+def test_full_product_crud(auth_headers):
     create_response = client.post(
         "/products",
         json={
             "name": "Test Keyboard",
-            "price": 2500,
+            "price": 1200,
             "in_stock": True
-        }
+        },
+        headers=auth_headers
     )
 
     assert create_response.status_code == 201
 
-    created_product = create_response.json()
-    product_id = created_product["id"]
+    product_id = create_response.json()["id"]
 
     get_response = client.get(f"/products/{product_id}")
 
@@ -83,7 +88,8 @@ def test_full_product_crud():
             "name": "Updated Keyboard",
             "price": 3000,
             "in_stock": False
-        }
+        },
+        headers=auth_headers
     )
 
     assert update_response.status_code == 200
@@ -91,7 +97,10 @@ def test_full_product_crud():
     assert update_response.json()["price"] == 3000
     assert update_response.json()["in_stock"] is False
 
-    delete_response = client.delete(f"/products/{product_id}")
+    delete_response = client.delete(
+        f"/products/{product_id}",
+        headers=auth_headers
+    )
 
     assert delete_response.status_code == 204
 

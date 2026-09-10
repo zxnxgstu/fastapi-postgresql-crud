@@ -42,3 +42,34 @@ def override_get_db():
 
 
 app.dependency_overrides[get_db] = override_get_db
+
+from fastapi.testclient import TestClient
+from main import app
+
+
+@pytest.fixture
+def auth_headers():
+    client = TestClient(app)
+
+    register_response = client.post(
+        "/register",
+        json={
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "password123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "testuser",
+            "password": "password123"
+        }
+    )
+
+    token = login_response.json()["access_token"]
+
+    return {
+        "Authorization": f"Bearer {token}"
+    }
