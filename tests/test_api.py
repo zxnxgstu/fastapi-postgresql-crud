@@ -10796,3 +10796,69 @@ def test_empty_profile_update_keeps_user_unchanged():
     assert update_response.json()["username"] == username
     assert update_response.json()["email"] == email
 
+def test_username_change_updates_login_credentials():
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    old_username = f"oldlogin_{suffix}"
+    new_username = f"newlogin_{suffix}"
+    email = f"loginchange_{suffix}@example.com"
+    password = "password123"
+
+    register_response = client.post(
+        "/register",
+        json={
+            "username": old_username,
+            "email": email,
+            "password": password
+        }
+    )
+
+    assert register_response.status_code == 201
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": old_username,
+            "password": password
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = login_response.json()["access_token"]
+
+    update_response = client.patch(
+        "/me",
+        json={
+            "username": new_username
+        },
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert update_response.status_code == 200
+    assert update_response.json()["username"] == new_username
+
+    old_login_response = client.post(
+        "/login",
+        data={
+            "username": old_username,
+            "password": password
+        }
+    )
+
+    assert old_login_response.status_code == 401
+
+    new_login_response = client.post(
+        "/login",
+        data={
+            "username": new_username,
+            "password": password
+        }
+    )
+
+    assert new_login_response.status_code == 200
+    assert "access_token" in new_login_response.json()
