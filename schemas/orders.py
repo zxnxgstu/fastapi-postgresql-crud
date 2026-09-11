@@ -65,6 +65,8 @@ class OrderResponse(BaseModel):
     customer_note: str | None
     subtotal: int
     discount_amount: int
+    shipping_carrier: str | None
+    tracking_number: str | None
 
 
 class OrderStatusUpdate(BaseModel):
@@ -75,3 +77,14 @@ class OrderStatusUpdate(BaseModel):
         "completed",
         "cancelled"
     ]
+
+class ShipmentTrackingUpdate(BaseModel):
+    shipping_carrier: str = Field(
+        min_length=1,
+        max_length=100
+    )
+
+    tracking_number: str = Field(
+        min_length=1,
+        max_length=100
+    )

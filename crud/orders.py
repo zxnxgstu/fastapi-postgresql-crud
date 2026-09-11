@@ -330,3 +330,22 @@ def cancel_order(
     db.refresh(order)
 
     return order
+
+def update_shipment_tracking(
+    db: Session,
+    order: Order,
+    shipping_carrier: str,
+    tracking_number: str
+):
+    if order.status != "shipped":
+        raise ValueError(
+            "Tracking can only be added to shipped orders"
+        )
+
+    order.shipping_carrier = shipping_carrier
+    order.tracking_number = tracking_number
+
+    db.commit()
+    db.refresh(order)
+
+    return order

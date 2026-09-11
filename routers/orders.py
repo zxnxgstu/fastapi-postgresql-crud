@@ -3,13 +3,19 @@ from sqlalchemy.orm import Session
 from typing import Literal
 import crud
 from dependencies import get_db, get_current_admin, get_current_user
-from models import User
+from models import Order, User
 from schemas import OrderStatusHistoryResponse
 from schemas import (
     OrderCreate,
     OrderResponse,
     OrderStatusUpdate,
     PaymentResponse,
+    ShipmentTrackingUpdate
+)
+from dependencies import (
+    get_current_admin,
+    get_current_user,
+    get_db,
 )
 
 
@@ -328,3 +334,37 @@ def get_order_status_history(
         db,
         order.id
     )
+@router.patch(
+    "/admin/orders/{order_id}/tracking",
+    response_model=OrderResponse
+)
+def update_order_tracking(
+    order_id: int,
+    tracking_data: ShipmentTrackingUpdate,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin)
+):
+    order = (
+        db.query(Order)
+        .filter(Order.id == order_id)
+        .first()
+    )
+
+    if order is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Order not found"
+        )
+
+    try:
+        return crud.update_shipment_tracking(
+            db=db,
+            order=order,
+            shipping_carrier=tracking_data.shipping_carrier,
+            tracking_number=tracking_data.tracking_number
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc)
+        )

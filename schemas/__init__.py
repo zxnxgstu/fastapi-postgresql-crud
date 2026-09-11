@@ -7,6 +7,7 @@ from .orders import (
     OrderResponse,
     OrderStatusUpdate,
     OrderCreate,
+    ShipmentTrackingUpdate
 )
 from .promo_codes import PromoCodeCreate, PromoCodeResponse
 from .wishlist import WishlistItemCreate, WishlistItemResponse
@@ -59,4 +60,5 @@ __all__ = [
     "DeliveryMethodCreate",
     "DeliveryMethodUpdate",
     "DeliveryMethodResponse",
+    "ShipmentTrackingUpdate",
 ]

@@ -167,6 +167,11 @@ REST API для управления товарами, созданный на F
 - Each order item stores its unit price, quantity, and line_total
 - line_total is calculated as price × quantity
 - Order item totals are preserved as part of the order snapshot
+- Order shipment tracking
+- Admins can add a shipping carrier and tracking number
+- Tracking can only be added to shipped orders
+- Regular users cannot modify shipment tracking
+- Tracking information is returned with order data
 
 ## API endpoints
 
@@ -205,4 +210,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 112 automated API tests.
+The project currently includes 115 automated API tests.

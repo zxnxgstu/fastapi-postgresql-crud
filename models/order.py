@@ -147,3 +147,11 @@ class Order(Base):
     default=0,
     server_default="0"
 )
+    shipping_carrier = Column(
+    String(100),
+    nullable=True
+)
+    tracking_number = Column(
+    String(100),
+    nullable=True
+)

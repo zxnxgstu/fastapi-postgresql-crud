@@ -4444,3 +4444,172 @@ def test_order_item_line_total():
     assert item["price"] == 1500
     assert item["quantity"] == 3
     assert item["line_total"] == 4500
+
+def test_admin_can_add_tracking_to_shipped_order(admin_headers):
+    headers = create_test_user(
+        "trackinguser1",
+        "trackinguser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Tracking Product 1",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    payment_response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert payment_response.status_code == 201
+
+    shipped_response = client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "shipped"
+        },
+        headers=admin_headers
+    )
+
+    assert shipped_response.status_code == 200
+
+    response = client.patch(
+        f"/admin/orders/{order_id}/tracking",
+        json={
+            "shipping_carrier": "Nova Poshta",
+            "tracking_number": "20450000000000"
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    order = response.json()
+
+    assert order["shipping_carrier"] == "Nova Poshta"
+    assert order["tracking_number"] == "20450000000000"
+
+
+def test_tracking_cannot_be_added_to_pending_order(admin_headers):
+    headers = create_test_user(
+        "trackinguser2",
+        "trackinguser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Tracking Product 2",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    response = client.patch(
+        f"/admin/orders/{order_id}/tracking",
+        json={
+            "shipping_carrier": "Nova Poshta",
+            "tracking_number": "TRACK-PENDING-001"
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "Tracking can only be added to shipped orders"
+    )
+
+
+def test_user_cannot_add_order_tracking():
+    headers = create_test_user(
+        "trackinguser3",
+        "trackinguser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Tracking Product 3",
+            "price": 1300,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    response = client.patch(
+        f"/admin/orders/{order_id}/tracking",
+        json={
+            "shipping_carrier": "Nova Poshta",
+            "tracking_number": "TRACK-FORBIDDEN-001"
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 403

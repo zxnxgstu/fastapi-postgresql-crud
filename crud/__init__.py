@@ -31,6 +31,7 @@ from .orders import (
     get_all_orders,
     update_order_status,
     cancel_order,
+    update_shipment_tracking
 )
 
 from .promo_codes import (
@@ -147,4 +148,5 @@ __all__ = [
     "get_delivery_method_by_code",
     "create_delivery_method",
     "update_delivery_method"
+    "update_shipment_tracking",
 ]
