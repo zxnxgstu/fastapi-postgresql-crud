@@ -10,6 +10,7 @@ from .orders import (
 )
 from .promo_codes import PromoCodeCreate, PromoCodeResponse
 from .wishlist import WishlistItemCreate, WishlistItemResponse
+from .reviews import ReviewCreate, ReviewUpdate, ReviewResponse
 
 __all__ = [
     "ProductCreate",
@@ -31,4 +32,7 @@ __all__ = [
     "PromoCodeResponse"
     "WishlistItemCreate",
     "WishlistItemResponse"
+    "ReviewCreate",
+    "ReviewUpdate",
+    "ReviewResponse"
 ]

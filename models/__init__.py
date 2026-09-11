@@ -6,6 +6,7 @@ from .product import Product
 from .user import User
 from .promo_code import PromoCode
 from .wishlist_item import WishlistItem
+from .review import Review
 
 __all__ = [
     "CartItem",
@@ -16,4 +17,5 @@ __all__ = [
     "User",
     "PromoCode"
     "WishlistItem",
+    "Review"
 ]

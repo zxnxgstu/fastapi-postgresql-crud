@@ -88,6 +88,12 @@ REST API для управления товарами, созданный на F
 - Remove products from wishlist
 - Duplicate wishlist items are prevented
 - Wishlist data is isolated between users
+- Product reviews and ratings
+- Rating validation from 1 to 5
+- Users can create, update and delete their own reviews
+- Duplicate reviews for the same product are prevented
+- Average product rating
+- Product review count
 
 ## API endpoints
 
@@ -126,4 +132,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 62 automated API tests.
+The project currently includes 68 automated API tests.

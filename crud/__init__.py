@@ -46,6 +46,15 @@ from .wishlist import (
     delete_wishlist_item,
 )
 
+from .reviews import (
+    get_product_reviews,
+    get_review,
+    get_user_review_for_product,
+    create_review,
+    update_review,
+    delete_review,
+)
+
 __all__ = [
     "get_products",
     "get_product",
@@ -77,4 +86,10 @@ __all__ = [
     "get_wishlist_item",
     "add_wishlist_item",
     "delete_wishlist_item",
+    "get_product_reviews",
+    "get_review",
+    "get_user_review_for_product",
+    "create_review",
+    "update_review",
+    "delete_review"
 ]

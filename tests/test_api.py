@@ -1782,3 +1782,253 @@ def test_users_have_separate_wishlists():
 
     assert response.status_code == 200
     assert response.json() == []
+
+def test_create_product_review():
+    headers = create_test_user(
+        "reviewuser1",
+        "reviewuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Review Product 1",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    response = client.post(
+        f"/products/{product_id}/reviews",
+        json={
+            "rating": 5,
+            "comment": "Great product"
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 201
+
+    review = response.json()
+
+    assert review["product_id"] == product_id
+    assert review["rating"] == 5
+    assert review["comment"] == "Great product"
+
+
+def test_invalid_review_rating():
+    headers = create_test_user(
+        "reviewuser2",
+        "reviewuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Review Product 2",
+            "price": 1200,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    response = client.post(
+        f"/products/{product_id}/reviews",
+        json={
+            "rating": 6,
+            "comment": "Invalid rating"
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 422
+
+
+def test_cannot_review_product_twice():
+    headers = create_test_user(
+        "reviewuser3",
+        "reviewuser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Review Product 3",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        f"/products/{product_id}/reviews",
+        json={
+            "rating": 4,
+            "comment": "First review"
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        f"/products/{product_id}/reviews",
+        json={
+            "rating": 5,
+            "comment": "Second review"
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "You already reviewed this product"
+
+
+def test_update_own_review():
+    headers = create_test_user(
+        "reviewuser4",
+        "reviewuser4@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Review Product 4",
+            "price": 2000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    review_response = client.post(
+        f"/products/{product_id}/reviews",
+        json={
+            "rating": 3,
+            "comment": "Normal"
+        },
+        headers=headers
+    )
+
+    review_id = review_response.json()["id"]
+
+    response = client.patch(
+        f"/products/reviews/{review_id}",
+        json={
+            "rating": 5,
+            "comment": "Much better"
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["rating"] == 5
+    assert response.json()["comment"] == "Much better"
+
+
+def test_delete_own_review():
+    headers = create_test_user(
+        "reviewuser5",
+        "reviewuser5@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Review Product 5",
+            "price": 2500,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    review_response = client.post(
+        f"/products/{product_id}/reviews",
+        json={
+            "rating": 4,
+            "comment": "Delete me"
+        },
+        headers=headers
+    )
+
+    review_id = review_response.json()["id"]
+
+    response = client.delete(
+        f"/products/reviews/{review_id}",
+        headers=headers
+    )
+
+    assert response.status_code == 204
+
+    reviews_response = client.get(
+        f"/products/{product_id}/reviews"
+    )
+
+    assert reviews_response.status_code == 200
+    assert reviews_response.json() == []
+
+def test_product_average_rating_and_reviews_count():
+    headers1 = create_test_user(
+        "ratinguser1",
+        "ratinguser1@example.com"
+    )
+
+    headers2 = create_test_user(
+        "ratinguser2",
+        "ratinguser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Rating Product",
+            "price": 3000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers1
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        f"/products/{product_id}/reviews",
+        json={
+            "rating": 5,
+            "comment": "Excellent"
+        },
+        headers=headers1
+    )
+
+    client.post(
+        f"/products/{product_id}/reviews",
+        json={
+            "rating": 3,
+            "comment": "Okay"
+        },
+        headers=headers2
+    )
+
+    response = client.get(
+        f"/products/{product_id}"
+    )
+
+    assert response.status_code == 200
+
+    product = response.json()
+
+    assert product["average_rating"] == 4.0
+    assert product["reviews_count"] == 2

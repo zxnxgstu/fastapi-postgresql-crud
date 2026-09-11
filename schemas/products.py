@@ -16,5 +16,8 @@ class ProductResponse(BaseModel):
     in_stock: bool
     stock_quantity: int
     category_id: int | None = None
+    
+    average_rating: float
+    reviews_count: int
 
     model_config = ConfigDict(from_attributes=True)

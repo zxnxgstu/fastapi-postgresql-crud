@@ -37,4 +37,24 @@ class Product(Base):
     "WishlistItem",
     back_populates="product",
     cascade="all, delete-orphan"
-)
+    ) 
+    reviews = relationship(
+    "Review",
+    back_populates="product",
+    cascade="all, delete-orphan"
+    )
+
+    @property
+    def reviews_count(self):
+        return len(self.reviews)
+
+    @property
+    def average_rating(self):
+        if not self.reviews:
+            return 0.0
+
+        return round(
+            sum(review.rating for review in self.reviews)
+            / len(self.reviews),
+            2
+        )
