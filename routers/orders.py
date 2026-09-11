@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 import crud
 from dependencies import get_db, get_current_admin, get_current_user
 from models import User
-from schemas import OrderResponse, OrderStatusUpdate
+from schemas import OrderCreate, OrderResponse, OrderStatusUpdate
 
 
 router = APIRouter(
@@ -14,13 +14,15 @@ router = APIRouter(
 
 @router.post("/orders", response_model=OrderResponse, status_code=201)
 def create_order(
+    order_data: OrderCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     try:
         order = crud.create_order_from_cart(
             db,
-            current_user.id
+            current_user.id,
+            order_data
         )
     except ValueError:
         raise HTTPException(

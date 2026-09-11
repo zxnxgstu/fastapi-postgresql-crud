@@ -34,10 +34,10 @@ class Order(Base):
     )
 
     status = Column(
-        String(20),
-        nullable=False,
-        server_default="pending"
-    )
+    String(20),
+    nullable=False,
+    server_default="pending"
+)
 
     created_at = Column(
         DateTime(timezone=True),
@@ -45,10 +45,25 @@ class Order(Base):
         server_default=func.now()
     )
 
-    user = relationship(
-        "User",
-        back_populates="orders"
+    shipping_city = Column(
+        String(100),
+        nullable=True
     )
+
+    shipping_street = Column(
+        String(255),
+        nullable=True
+    )
+
+    shipping_postal_code = Column(
+        String(20),
+        nullable=True
+    )
+
+    user = relationship(
+            "User",
+            back_populates="orders"
+        )
 
     items = relationship(
         "OrderItem",

@@ -6,6 +6,7 @@ from .orders import (
     OrderItemResponse,
     OrderResponse,
     OrderStatusUpdate,
+    OrderCreate,
 )
 
 __all__ = [
@@ -23,4 +24,5 @@ __all__ = [
     "OrderItemResponse",
     "OrderResponse",
     "OrderStatusUpdate"
+    "OrderCreate",
 ]

@@ -567,6 +567,12 @@ def create_test_user(username: str, email: str):
         "Authorization": f"Bearer {token}"
     }
 
+SHIPPING_DATA = {
+    "shipping_city": "Kyiv",
+    "shipping_street": "Khreshchatyk 1",
+    "shipping_postal_code": "01001"
+}
+
 def test_create_order_from_cart():
     headers = create_test_user(
         "orderuser1",
@@ -597,6 +603,7 @@ def test_create_order_from_cart():
 
     response = client.post(
         "/orders",
+        json=SHIPPING_DATA,
         headers=headers
     )
 
@@ -628,6 +635,7 @@ def test_create_order_with_empty_cart():
 
     response = client.post(
         "/orders",
+        json=SHIPPING_DATA,
         headers=headers
     )
 
@@ -665,6 +673,7 @@ def test_get_my_orders():
 
     client.post(
         "/orders",
+        json=SHIPPING_DATA,
         headers=headers
     )
 
@@ -712,6 +721,7 @@ def test_user_cannot_view_another_users_order():
 
     order_response = client.post(
         "/orders",
+        json=SHIPPING_DATA,
         headers=first_headers
     )
 
@@ -776,6 +786,7 @@ def test_admin_can_update_order_status(admin_headers):
 
     order_response = client.post(
         "/orders",
+        json=SHIPPING_DATA,
         headers=headers
     )
 
@@ -852,6 +863,7 @@ def test_order_decreases_stock(auth_headers):
 
     order_response = client.post(
         "/orders",
+        json=SHIPPING_DATA,
         headers=auth_headers
     )
 
@@ -891,6 +903,7 @@ def test_product_becomes_out_of_stock(auth_headers):
 
     order_response = client.post(
         "/orders",
+        json=SHIPPING_DATA,
         headers=auth_headers
     )
 
@@ -902,3 +915,15 @@ def test_product_becomes_out_of_stock(auth_headers):
 
     assert product_response.json()["stock_quantity"] == 0
     assert product_response.json()["in_stock"] is False
+
+def test_order_requires_full_shipping_address(auth_headers):
+    response = client.post(
+        "/orders",
+        json={
+            "shipping_city": "Kyiv",
+            "shipping_street": "Khreshchatyk 1"
+        },
+        headers=auth_headers
+    )
+
+    assert response.status_code == 422

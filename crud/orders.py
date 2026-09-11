@@ -1,12 +1,13 @@
 from sqlalchemy.orm import Session
 
 from models import CartItem, Order, OrderItem
-from schemas import OrderStatusUpdate
+from schemas import OrderCreate, OrderStatusUpdate
 
 
 def create_order_from_cart(
     db: Session,
-    user_id: int
+    user_id: int,
+    order_data: OrderCreate
 ):
     cart_items = (
         db.query(CartItem)
@@ -30,7 +31,10 @@ def create_order_from_cart(
 
     order = Order(
         user_id=user_id,
-        total_price=total_price
+        total_price=total_price,
+        shipping_city=order_data.shipping_city,
+        shipping_street=order_data.shipping_street,
+        shipping_postal_code=order_data.shipping_postal_code
     )
 
     db.add(order)

@@ -13,6 +13,10 @@ class OrderItemResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class OrderCreate(BaseModel):
+    shipping_city: str
+    shipping_street: str
+    shipping_postal_code: str
 
 class OrderResponse(BaseModel):
     id: int
@@ -20,6 +24,9 @@ class OrderResponse(BaseModel):
     total_price: int
     status: str
     created_at: datetime
+    shipping_city: str | None
+    shipping_street: str | None
+    shipping_postal_code: str | None
     items: list[OrderItemResponse]
 
     model_config = ConfigDict(from_attributes=True)
