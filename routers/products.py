@@ -49,7 +49,7 @@ def get_product(
 ):
     product = crud.get_product(db, product_id)
 
-    if product is None:
+    if product is None or not product.is_active:
         raise HTTPException(
             status_code=404,
             detail="Product not found"

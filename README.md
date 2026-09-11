@@ -235,6 +235,11 @@ REST API для управления товарами, созданный на F
 - Stock movements can be filtered by product and reason
 - Stock movement history supports pagination
 - Regular users cannot access the admin inventory movement log
+- Product soft deletion / archiving
+- Archived products are hidden from the public catalog
+- Archived products cannot be opened or added to the cart
+- Orders cannot be created with archived products
+- Product history remains stored in the database after archiving
 
 ## API endpoints
 
@@ -273,4 +278,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 165 automated API tests.
+The project currently includes 170 automated API tests.

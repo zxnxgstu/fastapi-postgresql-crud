@@ -11,11 +11,19 @@ class Product(Base):
     name = Column(String(100), nullable=False)
     price = Column(Integer, nullable=False)
     in_stock = Column(Boolean, nullable=False)
+
     stock_quantity = Column(
-    Integer,
-    nullable=False,
-    server_default="0"
-)
+        Integer,
+        nullable=False,
+        server_default="0"
+    )
+
+    is_active = Column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="true"
+    )
 
     category_id = Column(
         Integer,
@@ -28,20 +36,23 @@ class Product(Base):
         "Category",
         back_populates="products"
     )
+
     cart_items = relationship(
         "CartItem",
         back_populates="product",
         cascade="all, delete-orphan"
     )
+
     wishlist_items = relationship(
-    "WishlistItem",
-    back_populates="product",
-    cascade="all, delete-orphan"
-    ) 
+        "WishlistItem",
+        back_populates="product",
+        cascade="all, delete-orphan"
+    )
+
     reviews = relationship(
-    "Review",
-    back_populates="product",
-    cascade="all, delete-orphan"
+        "Review",
+        back_populates="product",
+        cascade="all, delete-orphan"
     )
 
     @property
@@ -58,19 +69,22 @@ class Product(Base):
             / len(self.reviews),
             2
         )
+
     price_history = relationship(
-    "PriceHistory",
-    back_populates="product",
-    cascade="all, delete-orphan"
+        "PriceHistory",
+        back_populates="product",
+        cascade="all, delete-orphan"
     )
+
     price_drop_notifications = relationship(
-    "PriceDropNotification",
-    back_populates="product",
-    cascade="all, delete-orphan"
-)
+        "PriceDropNotification",
+        back_populates="product",
+        cascade="all, delete-orphan"
+    )
+
     stock_movements = relationship(
-    "StockMovement",
-    back_populates="product",
-    cascade="all, delete-orphan",
-    order_by="StockMovement.created_at"
-)
+        "StockMovement",
+        back_populates="product",
+        cascade="all, delete-orphan",
+        order_by="StockMovement.created_at"
+    )

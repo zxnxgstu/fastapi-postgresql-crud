@@ -31,8 +31,11 @@ def create_order_from_cart(
     for cart_item in cart_items:
         product = cart_item.product
 
-        if product.stock_quantity < cart_item.quantity:
-            raise ValueError("Not enough stock")
+    if product is None or not product.is_active:
+        raise ValueError("Product is no longer available")
+
+    if product.stock_quantity < cart_item.quantity:
+        raise ValueError("Not enough stock")
 
     subtotal = sum(
         item.product.price * item.quantity

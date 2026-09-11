@@ -39,7 +39,7 @@ def add_cart_item(
         item.product_id
     )
 
-    if product is None:
+    if product is None or not product.is_active:
         raise HTTPException(
             status_code=404,
             detail="Product not found"
@@ -73,7 +73,6 @@ def add_cart_item(
         item
     )
 
-
 @router.patch("/{item_id}", response_model=CartItemResponse)
 def update_cart_item(
     item_id: int,
@@ -91,6 +90,15 @@ def update_cart_item(
         raise HTTPException(
             status_code=404,
             detail="Cart item not found"
+        )
+
+    if (
+        cart_item.product is None
+        or not cart_item.product.is_active
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found"
         )
 
     return crud.update_cart_item(

@@ -7265,3 +7265,192 @@ def test_stock_movements_support_pagination(admin_headers):
     data = response.json()
 
     assert len(data) == 1
+
+def test_archived_product_disappears_from_catalog(admin_headers):
+    headers = create_test_user(
+        "archiveuser1",
+        "archiveuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Archived Catalog Product",
+            "price": 2000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    assert product_response.status_code == 201
+    product_id = product_response.json()["id"]
+
+    delete_response = client.delete(
+        f"/products/{product_id}",
+        headers=admin_headers
+    )
+
+    assert delete_response.status_code == 204
+
+    response = client.get(
+        "/products?search=Archived%20Catalog%20Product"
+    )
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_archived_product_returns_404(admin_headers):
+    headers = create_test_user(
+        "archiveuser2",
+        "archiveuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Archived Get Product",
+            "price": 2100,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.delete(
+        f"/products/{product_id}",
+        headers=admin_headers
+    )
+
+    response = client.get(
+        f"/products/{product_id}"
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Product not found"
+
+
+def test_archived_product_cannot_be_added_to_cart(admin_headers):
+    headers = create_test_user(
+        "archiveuser3",
+        "archiveuser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Archived Cart Product",
+            "price": 2200,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.delete(
+        f"/products/{product_id}",
+        headers=admin_headers
+    )
+
+    response = client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Product not found"
+
+
+def test_archived_product_cannot_be_deleted_twice(admin_headers):
+    headers = create_test_user(
+        "archiveuser4",
+        "archiveuser4@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Archived Twice Product",
+            "price": 2300,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    first_delete = client.delete(
+        f"/products/{product_id}",
+        headers=admin_headers
+    )
+
+    second_delete = client.delete(
+        f"/products/{product_id}",
+        headers=admin_headers
+    )
+
+    assert first_delete.status_code == 204
+    assert second_delete.status_code == 404
+
+def test_order_cannot_be_created_with_archived_product(admin_headers):
+    headers = create_test_user(
+        "archiveuser5",
+        "archiveuser5@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Archived Order Product",
+            "price": 2400,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    cart_response = client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    assert cart_response.status_code == 201
+
+    archive_response = client.delete(
+        f"/products/{product_id}",
+        headers=admin_headers
+    )
+
+    assert archive_response.status_code == 204
+
+    order_response = client.post(
+        "/orders",
+        json={
+            "shipping_city": "Kyiv",
+            "shipping_street": "Test Street 1",
+            "shipping_postal_code": "01001"
+        },
+        headers=headers
+    )
+
+    assert order_response.status_code == 400
+    assert (
+        order_response.json()["detail"]
+        == "Product is no longer available"
+    )

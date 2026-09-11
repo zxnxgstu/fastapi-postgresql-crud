@@ -19,7 +19,10 @@ def get_products(
     sort_by: str = "id",
     order: str = "asc"
 ):
-    query = db.query(Product)
+    query = (
+        db.query(Product)
+        .filter(Product.is_active.is_(True))
+    )
 
     if search:
         query = query.filter(
@@ -160,10 +163,16 @@ def delete_product(db: Session, product_id: int):
     if db_product is None:
         return False
 
-    db.delete(db_product)
+    if not db_product.is_active:
+        return False
+
+    db_product.is_active = False
+
     db.commit()
+    db.refresh(db_product)
 
     return True
+
 def get_product_price_history(
     db: Session,
     product_id: int
