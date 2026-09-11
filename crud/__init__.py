@@ -62,6 +62,10 @@ from .notifications import (
     mark_notification_as_read,
 )
 
+from .payments import (
+    get_payment_by_order,
+    create_payment,
+)
 
 __all__ = [
     "get_products",
@@ -104,4 +108,6 @@ __all__ = [
     "get_user_notifications",
     "get_user_notification",
     "mark_notification_as_read"
+    "get_payment_by_order",
+    "create_payment",
 ]

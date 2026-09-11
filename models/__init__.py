@@ -9,6 +9,7 @@ from .wishlist_item import WishlistItem
 from .review import Review
 from .price_history import PriceHistory
 from .price_drop_notification import PriceDropNotification
+from .payment import Payment
 
 __all__ = [
     "CartItem",
@@ -22,4 +23,5 @@ __all__ = [
     "Review"
     "PriceHistory",
     "PriceDropNotification"
+    "Payment",
 ]

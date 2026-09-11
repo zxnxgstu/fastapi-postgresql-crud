@@ -2271,3 +2271,206 @@ def test_mark_price_drop_notification_as_read(admin_headers):
 
     assert response.status_code == 200
     assert response.json()["is_read"] is True
+
+def test_user_can_pay_order():
+    headers = create_test_user(
+        "paymentuser1",
+        "paymentuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Payment Product",
+            "price": 2000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 2
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert response.status_code == 201
+
+    payment = response.json()
+
+    assert payment["order_id"] == order_id
+    assert payment["amount"] == 4000
+    assert payment["status"] == "paid"
+
+
+def test_order_cannot_be_paid_twice():
+    headers = create_test_user(
+        "paymentuser2",
+        "paymentuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Double Payment Product",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    first_response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert first_response.status_code == 201
+
+    response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Order already paid"
+
+
+def test_user_cannot_pay_another_users_order():
+    headers1 = create_test_user(
+        "paymentuser3",
+        "paymentuser3@example.com"
+    )
+
+    headers2 = create_test_user(
+        "paymentuser4",
+        "paymentuser4@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Private Payment Product",
+            "price": 1800,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers1
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers1
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers1
+    )
+
+    order_id = order_response.json()["id"]
+
+    response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers2
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Order not found"
+
+
+def test_cancelled_order_cannot_be_paid():
+    headers = create_test_user(
+        "paymentuser5",
+        "paymentuser5@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Cancelled Payment Product",
+            "price": 2200,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    cancel_response = client.post(
+        f"/orders/{order_id}/cancel",
+        headers=headers
+    )
+
+    assert cancel_response.status_code == 200
+
+    response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Cancelled order cannot be paid"

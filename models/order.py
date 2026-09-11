@@ -79,3 +79,9 @@ class Order(Base):
             name="ck_orders_status"
         ),
     )
+    payment = relationship(
+    "Payment",
+    back_populates="order",
+    uselist=False,
+    cascade="all, delete-orphan"
+)

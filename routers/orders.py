@@ -4,7 +4,12 @@ from typing import Literal
 import crud
 from dependencies import get_db, get_current_admin, get_current_user
 from models import User
-from schemas import OrderCreate, OrderResponse, OrderStatusUpdate
+from schemas import (
+    OrderCreate,
+    OrderResponse,
+    OrderStatusUpdate,
+    PaymentResponse,
+)
 
 
 router = APIRouter(
@@ -198,3 +203,52 @@ def cancel_order_by_admin(
             status_code=400,
             detail=str(exc)
         )
+@router.post(
+    "/orders/{order_id}/pay",
+    response_model=PaymentResponse,
+    status_code=201
+)
+def pay_order(
+    order_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    order = crud.get_user_order(
+        db,
+        order_id,
+        current_user.id
+    )
+
+    if order is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Order not found"
+        )
+
+    if order.status == "cancelled":
+        raise HTTPException(
+            status_code=400,
+            detail="Cancelled order cannot be paid"
+        )
+
+    if order.status == "completed":
+        raise HTTPException(
+            status_code=400,
+            detail="Completed order cannot be paid"
+        )
+
+    existing_payment = crud.get_payment_by_order(
+        db,
+        order.id
+    )
+
+    if existing_payment is not None:
+        raise HTTPException(
+            status_code=400,
+            detail="Order already paid"
+        )
+
+    return crud.create_payment(
+        db,
+        order
+    )

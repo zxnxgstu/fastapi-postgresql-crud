@@ -104,6 +104,13 @@ REST API для управления товарами, созданный на F
 - No notification when price increases
 - Users can view their own notifications
 - Notifications can be marked as read
+- Order payment simulation
+- One payment per order
+- Payment amount stored with each payment
+- Successful payment automatically changes order status to paid
+- Duplicate payments are prevented
+- Cancelled and completed orders cannot be paid
+- Users cannot pay another user's order
 
 ## API endpoints
 
@@ -142,4 +149,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 73 automated API tests.
+The project currently includes 77 automated API tests.
