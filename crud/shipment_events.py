@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-
+from .order_status_history import create_order_status_history
 from models import Order, ShipmentEvent
 from schemas import ShipmentEventCreate
 
@@ -26,10 +26,7 @@ def create_shipment_event(
     order: Order,
     event_data: ShipmentEventCreate
 ):
-    if order.status not in (
-        "shipped",
-        "completed",
-    ):
+    if order.status != "shipped":
         raise ValueError(
             "Shipment events can only be added to shipped orders"
         )
@@ -41,6 +38,18 @@ def create_shipment_event(
     )
 
     db.add(event)
+
+    if event_data.status == "delivered":
+        old_status = order.status
+        order.status = "completed"
+
+        create_order_status_history(
+            db=db,
+            order_id=order.id,
+            old_status=old_status,
+            new_status="completed"
+        )
+
     db.commit()
     db.refresh(event)
 

@@ -184,6 +184,11 @@ REST API для управления товарами, созданный на F
 - Users can view shipment history only for their own orders
 - Regular users cannot create shipment events
 - Shipment events cannot be added before an order is shipped
+- Shipment delivery synchronization
+- A delivered shipment event automatically completes the order
+- The shipped -> completed transition is stored in order status history
+- Duplicate delivered events are rejected
+- Shipment events cannot be added after an order is completed
 
 ## API endpoints
 
@@ -222,4 +227,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 122 automated API tests.
+The project currently includes 125 automated API tests.
