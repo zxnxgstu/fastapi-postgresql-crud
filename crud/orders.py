@@ -349,3 +349,19 @@ def update_shipment_tracking(
     db.refresh(order)
 
     return order
+def update_estimated_delivery_date(
+    db: Session,
+    order: Order,
+    estimated_delivery_date
+):
+    if order.status != "shipped":
+        raise ValueError(
+            "Estimated delivery date can only be set for shipped orders"
+        )
+
+    order.estimated_delivery_date = estimated_delivery_date
+
+    db.commit()
+    db.refresh(order)
+
+    return order

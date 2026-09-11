@@ -172,6 +172,11 @@ REST API для управления товарами, созданный на F
 - Tracking can only be added to shipped orders
 - Regular users cannot modify shipment tracking
 - Tracking information is returned with order data
+- Estimated delivery date
+- Admins can set an estimated delivery date for shipped orders
+- Estimated delivery dates cannot be in the past
+- Regular users cannot modify the estimated delivery date
+- Estimated delivery date is returned with order data
 
 ## API endpoints
 
@@ -210,4 +215,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 115 automated API tests.
+The project currently includes 118 automated API tests.

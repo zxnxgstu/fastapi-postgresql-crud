@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, model_validator, Field
-
+from datetime import date
 
 class OrderItemResponse(BaseModel):
     id: int
@@ -67,6 +67,7 @@ class OrderResponse(BaseModel):
     discount_amount: int
     shipping_carrier: str | None
     tracking_number: str | None
+    estimated_delivery_date: date | None
 
 
 class OrderStatusUpdate(BaseModel):
@@ -88,3 +89,14 @@ class ShipmentTrackingUpdate(BaseModel):
         min_length=1,
         max_length=100
     )
+class EstimatedDeliveryDateUpdate(BaseModel):
+    estimated_delivery_date: date
+
+    @model_validator(mode="after")
+    def validate_delivery_date(self):
+        if self.estimated_delivery_date < date.today():
+            raise ValueError(
+                "Estimated delivery date cannot be in the past"
+            )
+
+        return self

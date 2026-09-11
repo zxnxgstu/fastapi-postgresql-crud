@@ -17,6 +17,7 @@ from dependencies import (
     get_current_user,
     get_db,
 )
+from schemas.orders import EstimatedDeliveryDateUpdate
 
 
 router = APIRouter(
@@ -362,6 +363,42 @@ def update_order_tracking(
             order=order,
             shipping_carrier=tracking_data.shipping_carrier,
             tracking_number=tracking_data.tracking_number
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc)
+        )
+
+@router.patch(
+    "/admin/orders/{order_id}/estimated-delivery",
+    response_model=OrderResponse
+)
+def update_order_estimated_delivery_date(
+    order_id: int,
+    delivery_data: EstimatedDeliveryDateUpdate,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin)
+):
+    order = (
+        db.query(Order)
+        .filter(Order.id == order_id)
+        .first()
+    )
+
+    if order is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Order not found"
+        )
+
+    try:
+        return crud.update_estimated_delivery_date(
+            db=db,
+            order=order,
+            estimated_delivery_date=(
+                delivery_data.estimated_delivery_date
+            )
         )
     except ValueError as exc:
         raise HTTPException(

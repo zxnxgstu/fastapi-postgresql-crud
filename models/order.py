@@ -2,6 +2,7 @@ from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, CheckConst
 from sqlalchemy.orm import relationship
 from database import Base
 from pydantic import BaseModel, Field, model_validator
+from sqlalchemy import Date
 
 
 class Order(Base):
@@ -153,5 +154,9 @@ class Order(Base):
 )
     tracking_number = Column(
     String(100),
+    nullable=True
+)
+    estimated_delivery_date = Column(
+    Date,
     nullable=True
 )

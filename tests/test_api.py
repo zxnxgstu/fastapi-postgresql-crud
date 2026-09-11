@@ -4613,3 +4613,187 @@ def test_user_cannot_add_order_tracking():
     )
 
     assert response.status_code == 403
+
+def test_admin_can_set_estimated_delivery_date_for_shipped_order(
+    admin_headers
+):
+    headers = create_test_user(
+        "estimateddateuser1",
+        "estimateddateuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Estimated Date Product 1",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+
+    order_id = order_response.json()["id"]
+
+    payment_response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert payment_response.status_code == 201
+
+    shipped_response = client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "shipped"
+        },
+        headers=admin_headers
+    )
+
+    assert shipped_response.status_code == 200
+
+    response = client.patch(
+        f"/admin/orders/{order_id}/estimated-delivery",
+        json={
+            "estimated_delivery_date": "2099-12-31"
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+    assert (
+        response.json()["estimated_delivery_date"]
+        == "2099-12-31"
+    )
+
+
+def test_estimated_delivery_date_cannot_be_in_past(
+    admin_headers
+):
+    headers = create_test_user(
+        "estimateddateuser2",
+        "estimateddateuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Estimated Date Product 2",
+            "price": 1200,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    payment_response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert payment_response.status_code == 201
+
+    shipped_response = client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "shipped"
+        },
+        headers=admin_headers
+    )
+
+    assert shipped_response.status_code == 200
+
+    response = client.patch(
+        f"/admin/orders/{order_id}/estimated-delivery",
+        json={
+            "estimated_delivery_date": "2000-01-01"
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 422
+
+
+def test_user_cannot_set_estimated_delivery_date():
+    headers = create_test_user(
+        "estimateddateuser3",
+        "estimateddateuser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Estimated Date Product 3",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    response = client.patch(
+        f"/admin/orders/{order_id}/estimated-delivery",
+        json={
+            "estimated_delivery_date": "2099-12-31"
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 403
