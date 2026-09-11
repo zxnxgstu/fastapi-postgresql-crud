@@ -147,3 +147,47 @@ def test_get_users_for_admin(admin_headers):
 
     assert response.status_code == 200
     assert isinstance(response.json(), list)
+
+def test_admin_can_update_user_role(admin_headers):
+    register_response = client.post(
+        "/register",
+        json={
+            "username": "roleuser",
+            "email": "roleuser@example.com",
+            "password": "password123"
+        }
+    )
+
+    assert register_response.status_code == 201
+
+    user_id = register_response.json()["id"]
+
+    response = client.patch(
+        f"/users/{user_id}/role",
+        json={"role": "admin"},
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["role"] == "admin"
+
+
+def test_user_cannot_update_roles(auth_headers):
+    response = client.patch(
+        "/users/999/role",
+        json={"role": "admin"},
+        headers=auth_headers
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Admin access required"
+
+
+def test_invalid_user_role(admin_headers):
+    response = client.patch(
+        "/users/999/role",
+        json={"role": "superadmin"},
+        headers=admin_headers
+    )
+
+    assert response.status_code == 422

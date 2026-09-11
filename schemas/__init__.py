@@ -1,5 +1,5 @@
 from .products import ProductCreate, ProductResponse
-from .users import UserCreate, UserResponse, Token
+from .users import UserCreate, UserResponse, Token, UserRoleUpdate
 
 
 __all__ = [
@@ -8,4 +8,5 @@ __all__ = [
     "UserCreate",
     "UserResponse",
     "Token",
+    "UserRoleUpdate",
 ]

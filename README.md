@@ -38,6 +38,10 @@ REST API для управления товарами, созданный на F
 - Docker support
 - Automated tests
 - CI with GitHub Actions
+- User roles: `user` and `admin`
+- Role-based access control
+- Admin-only user management
+- Admin can change user roles
 
 ## API endpoints
 | Method | Endpoint | Description | Auth |
@@ -64,3 +68,5 @@ Example:
 
 ```text
 GET /products?search=Mouse&in_stock=true&skip=0&limit=10
+
+The project currently includes 13 automated API tests.

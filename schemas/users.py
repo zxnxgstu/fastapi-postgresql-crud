@@ -1,4 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field
+from typing import Literal
 
 
 class UserCreate(BaseModel):
@@ -19,3 +20,6 @@ class UserResponse(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class UserRoleUpdate(BaseModel):
+    role: Literal["user", "admin"]
