@@ -8,6 +8,7 @@ from .promo_code import PromoCode
 from .wishlist_item import WishlistItem
 from .review import Review
 from .price_history import PriceHistory
+from .price_drop_notification import PriceDropNotification
 
 __all__ = [
     "CartItem",
@@ -20,4 +21,5 @@ __all__ = [
     "WishlistItem",
     "Review"
     "PriceHistory",
+    "PriceDropNotification"
 ]

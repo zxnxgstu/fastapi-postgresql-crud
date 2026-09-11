@@ -99,6 +99,11 @@ REST API для управления товарами, созданный на F
 - Old and new prices stored for each change
 - Price history endpoint for products
 - Unchanged prices do not create duplicate history entries
+- Price drop notifications for wishlist products
+- Automatic notification when a product price decreases
+- No notification when price increases
+- Users can view their own notifications
+- Notifications can be marked as read
 
 ## API endpoints
 
@@ -137,4 +142,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 70 automated API tests.
+The project currently includes 73 automated API tests.

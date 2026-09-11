@@ -62,4 +62,9 @@ class Product(Base):
     "PriceHistory",
     back_populates="product",
     cascade="all, delete-orphan"
+    )
+    price_drop_notifications = relationship(
+    "PriceDropNotification",
+    back_populates="product",
+    cascade="all, delete-orphan"
 )

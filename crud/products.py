@@ -1,5 +1,10 @@
 from sqlalchemy.orm import Session
-from models import PriceHistory, Product
+from models import (
+    PriceDropNotification,
+    PriceHistory,
+    Product,
+    WishlistItem,
+)
 from schemas import ProductCreate
 
 
@@ -116,6 +121,25 @@ def update_product(
         )
 
         db.add(price_history)
+
+        if updated_product.price < old_price:
+            wishlist_items = (
+                db.query(WishlistItem)
+                .filter(
+                    WishlistItem.product_id == db_product.id
+                )
+                .all()
+            )
+
+            for wishlist_item in wishlist_items:
+                notification = PriceDropNotification(
+                    user_id=wishlist_item.user_id,
+                    product_id=db_product.id,
+                    old_price=old_price,
+                    new_price=updated_product.price
+                )
+
+                db.add(notification)
 
     db_product.name = updated_product.name
     db_product.price = updated_product.price

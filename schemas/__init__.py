@@ -12,6 +12,7 @@ from .promo_codes import PromoCodeCreate, PromoCodeResponse
 from .wishlist import WishlistItemCreate, WishlistItemResponse
 from .reviews import ReviewCreate, ReviewUpdate, ReviewResponse
 from .price_history import PriceHistoryResponse
+from .notifications import PriceDropNotificationResponse
 
 __all__ = [
     "ProductCreate",
@@ -37,4 +38,5 @@ __all__ = [
     "ReviewUpdate",
     "ReviewResponse"
     "PriceHistoryResponse",
+    "PriceDropNotificationResponse"
 ]

@@ -42,4 +42,9 @@ class User(Base):
     "Review",
     back_populates="user",
     cascade="all, delete-orphan"
-)
+    )
+    price_drop_notifications = relationship(
+        "PriceDropNotification",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )

@@ -2117,3 +2117,157 @@ def test_same_price_does_not_create_price_history(admin_headers):
 
     assert response.status_code == 200
     assert response.json() == []
+
+def test_price_drop_creates_notification(admin_headers):
+    headers = create_test_user(
+        "notifyuser1",
+        "notifyuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Notification Product",
+            "price": 3000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/wishlist",
+        json={
+            "product_id": product_id
+        },
+        headers=headers
+    )
+
+    client.put(
+        f"/products/{product_id}",
+        json={
+            "name": "Notification Product",
+            "price": 2500,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=admin_headers
+    )
+
+    response = client.get(
+        "/notifications",
+        headers=headers
+    )
+
+    assert response.status_code == 200
+
+    notifications = response.json()
+
+    assert len(notifications) == 1
+    assert notifications[0]["product_id"] == product_id
+    assert notifications[0]["old_price"] == 3000
+    assert notifications[0]["new_price"] == 2500
+    assert notifications[0]["is_read"] is False
+
+
+def test_price_increase_does_not_create_notification(admin_headers):
+    headers = create_test_user(
+        "notifyuser2",
+        "notifyuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "No Notification Product",
+            "price": 2000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/wishlist",
+        json={
+            "product_id": product_id
+        },
+        headers=headers
+    )
+
+    client.put(
+        f"/products/{product_id}",
+        json={
+            "name": "No Notification Product",
+            "price": 2500,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=admin_headers
+    )
+
+    response = client.get(
+        "/notifications",
+        headers=headers
+    )
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_mark_price_drop_notification_as_read(admin_headers):
+    headers = create_test_user(
+        "notifyuser3",
+        "notifyuser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Read Notification Product",
+            "price": 5000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/wishlist",
+        json={
+            "product_id": product_id
+        },
+        headers=headers
+    )
+
+    client.put(
+        f"/products/{product_id}",
+        json={
+            "name": "Read Notification Product",
+            "price": 4000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=admin_headers
+    )
+
+    notifications_response = client.get(
+        "/notifications",
+        headers=headers
+    )
+
+    notification_id = notifications_response.json()[0]["id"]
+
+    response = client.patch(
+        f"/notifications/{notification_id}/read",
+        headers=headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["is_read"] is True

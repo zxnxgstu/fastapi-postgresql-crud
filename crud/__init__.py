@@ -56,6 +56,12 @@ from .reviews import (
     delete_review,
 )
 
+from .notifications import (
+    get_user_notifications,
+    get_user_notification,
+    mark_notification_as_read,
+)
+
 
 __all__ = [
     "get_products",
@@ -95,4 +101,7 @@ __all__ = [
     "update_review",
     "delete_review"
     "get_product_price_history",
+    "get_user_notifications",
+    "get_user_notification",
+    "mark_notification_as_read"
 ]
