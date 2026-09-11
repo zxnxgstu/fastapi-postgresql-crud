@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
-
-from models import Product
+from models import PriceHistory, Product
 from schemas import ProductCreate
 
 
@@ -85,10 +84,15 @@ def update_product(
     product_id: int,
     updated_product: ProductCreate
 ):
-    db_product = get_product(db, product_id)
+    db_product = get_product(
+        db,
+        product_id
+    )
 
     if db_product is None:
         return None
+
+    old_price = db_product.price
 
     stock_quantity = updated_product.stock_quantity
 
@@ -97,8 +101,21 @@ def update_product(
 
         if updated_product.in_stock is False:
             stock_quantity = 0
-        elif updated_product.in_stock is True and stock_quantity == 0:
+
+        elif (
+            updated_product.in_stock is True
+            and stock_quantity == 0
+        ):
             stock_quantity = 1
+
+    if updated_product.price != old_price:
+        price_history = PriceHistory(
+            product_id=db_product.id,
+            old_price=old_price,
+            new_price=updated_product.price
+        )
+
+        db.add(price_history)
 
     db_product.name = updated_product.name
     db_product.price = updated_product.price
@@ -122,3 +139,13 @@ def delete_product(db: Session, product_id: int):
     db.commit()
 
     return True
+def get_product_price_history(
+    db: Session,
+    product_id: int
+):
+    return (
+        db.query(PriceHistory)
+        .filter(PriceHistory.product_id == product_id)
+        .order_by(PriceHistory.changed_at.desc())
+        .all()
+    )

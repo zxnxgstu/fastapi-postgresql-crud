@@ -94,6 +94,11 @@ REST API для управления товарами, созданный на F
 - Duplicate reviews for the same product are prevented
 - Average product rating
 - Product review count
+- Product price history
+- Automatic price change tracking
+- Old and new prices stored for each change
+- Price history endpoint for products
+- Unchanged prices do not create duplicate history entries
 
 ## API endpoints
 
@@ -132,4 +137,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 68 automated API tests.
+The project currently includes 70 automated API tests.

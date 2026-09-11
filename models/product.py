@@ -58,3 +58,8 @@ class Product(Base):
             / len(self.reviews),
             2
         )
+    price_history = relationship(
+    "PriceHistory",
+    back_populates="product",
+    cascade="all, delete-orphan"
+)

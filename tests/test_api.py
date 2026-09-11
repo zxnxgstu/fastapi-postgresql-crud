@@ -2032,3 +2032,88 @@ def test_product_average_rating_and_reviews_count():
 
     assert product["average_rating"] == 4.0
     assert product["reviews_count"] == 2
+
+def test_product_price_history(admin_headers):
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Price History Product",
+            "price": 3000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=admin_headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.put(
+        f"/products/{product_id}",
+        json={
+            "name": "Price History Product",
+            "price": 2500,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=admin_headers
+    )
+
+    client.put(
+        f"/products/{product_id}",
+        json={
+            "name": "Price History Product",
+            "price": 2000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=admin_headers
+    )
+
+    response = client.get(
+        f"/products/{product_id}/price-history"
+    )
+
+    assert response.status_code == 200
+
+    history = response.json()
+
+    assert len(history) == 2
+
+    assert history[0]["old_price"] == 2500
+    assert history[0]["new_price"] == 2000
+
+    assert history[1]["old_price"] == 3000
+    assert history[1]["new_price"] == 2500
+
+
+def test_same_price_does_not_create_price_history(admin_headers):
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Same Price Product",
+            "price": 4000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=admin_headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.put(
+        f"/products/{product_id}",
+        json={
+            "name": "Same Price Product Updated",
+            "price": 4000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=admin_headers
+    )
+
+    response = client.get(
+        f"/products/{product_id}/price-history"
+    )
+
+    assert response.status_code == 200
+    assert response.json() == []

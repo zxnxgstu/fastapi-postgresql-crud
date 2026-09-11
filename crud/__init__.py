@@ -4,6 +4,7 @@ from .products import (
     create_product,
     update_product,
     delete_product,
+    get_product_price_history,
 )
 
 from .categories import (
@@ -55,6 +56,7 @@ from .reviews import (
     delete_review,
 )
 
+
 __all__ = [
     "get_products",
     "get_product",
@@ -92,4 +94,5 @@ __all__ = [
     "create_review",
     "update_review",
     "delete_review"
+    "get_product_price_history",
 ]
