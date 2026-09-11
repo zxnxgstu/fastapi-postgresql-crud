@@ -8,6 +8,7 @@ def get_products(
     db: Session,
     search: str | None = None,
     in_stock: bool | None = None,
+    category_id: int | None = None,
     skip: int = 0,
     limit: int = 10
 ):
@@ -18,6 +19,9 @@ def get_products(
 
     if in_stock is not None:
         query = query.filter(Product.in_stock == in_stock)
+
+    if category_id is not None:
+        query = query.filter(Product.category_id == category_id)
 
     return query.offset(skip).limit(limit).all()
 
@@ -34,7 +38,8 @@ def create_product(db: Session, product: ProductCreate):
     db_product = Product(
         name=product.name,
         price=product.price,
-        in_stock=product.in_stock
+        in_stock=product.in_stock,
+        category_id=product.category_id
     )
 
     db.add(db_product)
@@ -57,6 +62,7 @@ def update_product(
     db_product.name = updated_product.name
     db_product.price = updated_product.price
     db_product.in_stock = updated_product.in_stock
+    db_product.category_id = updated_product.category_id
 
     db.commit()
     db.refresh(db_product)

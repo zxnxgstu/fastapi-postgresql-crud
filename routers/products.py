@@ -17,6 +17,7 @@ router = APIRouter(
 def get_products(
     search: str | None = None,
     in_stock: bool | None = None,
+    category_id: int | None = None,
     skip: int = 0,
     limit: int = 10,
     db: Session = Depends(get_db)
@@ -25,6 +26,7 @@ def get_products(
         db,
         search=search,
         in_stock=in_stock,
+        category_id=category_id,
         skip=skip,
         limit=limit
     )
@@ -52,6 +54,18 @@ def create_product(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if product.category_id is not None:
+        category = crud.get_category(
+            db,
+            product.category_id
+        )
+
+        if category is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Category not found"
+            )
+
     return crud.create_product(db, product)
 
 
@@ -62,6 +76,18 @@ def update_product(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if updated_product.category_id is not None:
+        category = crud.get_category(
+            db,
+            updated_product.category_id
+        )
+
+        if category is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Category not found"
+            )
+
     product = crud.update_product(
         db,
         product_id,

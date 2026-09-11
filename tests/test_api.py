@@ -191,3 +191,111 @@ def test_invalid_user_role(admin_headers):
     )
 
     assert response.status_code == 422
+
+def test_get_categories():
+    response = client.get("/categories")
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+def test_admin_can_create_category(admin_headers):
+    response = client.post(
+        "/categories",
+        json={"name": "Electronics"},
+        headers=admin_headers
+    )
+
+    assert response.status_code == 201
+    assert response.json()["name"] == "Electronics"
+
+
+def test_user_cannot_create_category(auth_headers):
+    response = client.post(
+        "/categories",
+        json={"name": "Forbidden Category"},
+        headers=auth_headers
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Admin access required"
+
+
+def test_create_product_with_category(auth_headers, admin_headers):
+    category_response = client.post(
+        "/categories",
+        json={"name": "Keyboards"},
+        headers=admin_headers
+    )
+
+    assert category_response.status_code == 201
+
+    category_id = category_response.json()["id"]
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Mechanical Keyboard",
+            "price": 2500,
+            "in_stock": True,
+            "category_id": category_id
+        },
+        headers=auth_headers
+    )
+
+    assert product_response.status_code == 201
+    assert product_response.json()["category_id"] == category_id
+
+
+def test_create_product_with_missing_category(auth_headers):
+    response = client.post(
+        "/products",
+        json={
+            "name": "Invalid Product",
+            "price": 1000,
+            "in_stock": True,
+            "category_id": 999999
+        },
+        headers=auth_headers
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Category not found"
+
+def test_filter_products_by_category(auth_headers, admin_headers):
+    category_response = client.post(
+        "/categories",
+        json={"name": "Monitors"},
+        headers=admin_headers
+    )
+
+    assert category_response.status_code == 201
+
+    category_id = category_response.json()["id"]
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Gaming Monitor",
+            "price": 7000,
+            "in_stock": True,
+            "category_id": category_id
+        },
+        headers=auth_headers
+    )
+
+    assert product_response.status_code == 201
+
+    response = client.get(
+        f"/products?category_id={category_id}"
+    )
+
+    assert response.status_code == 200
+
+    products = response.json()
+
+    assert len(products) >= 1
+    assert all(
+        product["category_id"] == category_id
+        for product in products
+    )

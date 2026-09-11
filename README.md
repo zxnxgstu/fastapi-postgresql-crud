@@ -42,24 +42,32 @@ REST API для управления товарами, созданный на F
 - Role-based access control
 - Admin-only user management
 - Admin can change user roles
+- Product categories
+- Products can be assigned to categories
+- Product filtering by category
+- Admin-only category creation
 
 ## API endpoints
+
 | Method | Endpoint | Description | Auth |
 |---|---|---|---|
 | POST | `/register` | Register new user | No |
 | POST | `/login` | Login and get JWT token | No |
 | GET | `/me` | Get current user | Yes |
+| GET | `/users` | Get all users | Admin |
+| PATCH | `/users/{user_id}/role` | Change user role | Admin |
 | GET | `/products` | Get products | No |
 | GET | `/products/{product_id}` | Get product by ID | No |
 | POST | `/products` | Create product | Yes |
 | PUT | `/products/{product_id}` | Update product | Yes |
 | DELETE | `/products/{product_id}` | Delete product | Admin |
+| GET | `/categories` | Get all categories | No |
+| GET | `/categories/{category_id}` | Get category by ID | No |
+| POST | `/categories` | Create category | Admin |
 
-## Search and pagination
+## Product filtering and pagination
 
-Example:
+Products can be filtered by name, stock status and category:
 
 ```text
-GET /products?search=Mouse&in_stock=true&skip=0&limit=10
-
-The project currently includes 13 automated API tests.
+GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
