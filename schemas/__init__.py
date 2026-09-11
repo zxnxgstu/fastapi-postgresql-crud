@@ -15,6 +15,11 @@ from .price_history import PriceHistoryResponse
 from .notifications import PriceDropNotificationResponse
 from .payments import PaymentResponse
 from .order_status_history import OrderStatusHistoryResponse
+from .addresses import (
+    AddressCreate,
+    AddressUpdate,
+    AddressResponse,
+)
 
 __all__ = [
     "ProductCreate",
@@ -43,4 +48,7 @@ __all__ = [
     "PriceDropNotificationResponse"
     "PaymentResponse"
     "OrderStatusHistoryResponse"
+    "AddressCreate",
+    "AddressUpdate",
+    "AddressResponse"
 ]

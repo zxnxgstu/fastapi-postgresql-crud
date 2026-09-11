@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class OrderItemResponse(BaseModel):
@@ -14,10 +14,31 @@ class OrderItemResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class OrderCreate(BaseModel):
-    shipping_city: str
-    shipping_street: str
-    shipping_postal_code: str
+    shipping_city: str | None = None
+    shipping_street: str | None = None
+    shipping_postal_code: str | None = None
+    address_id: int | None = None
     promo_code: str | None = None
+
+    @model_validator(mode="after")
+    def validate_shipping_address(self):
+        shipping_values = [
+            self.shipping_city,
+            self.shipping_street,
+            self.shipping_postal_code
+        ]
+
+        provided_count = sum(
+            value is not None
+            for value in shipping_values
+        )
+
+        if provided_count not in (0, 3):
+            raise ValueError(
+                "Provide full shipping address"
+            )
+
+        return self
 
 class OrderResponse(BaseModel):
     id: int

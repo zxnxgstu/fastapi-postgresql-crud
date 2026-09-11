@@ -133,6 +133,15 @@ REST API для управления товарами, созданный на F
 - Order cancellation records -> cancelled
 - Payment refund records paid -> cancelled
 - Users can view status history only for their own orders
+- Saved user addresses
+- Users can create, update, list, and delete delivery addresses
+- The first saved address automatically becomes the default
+- Users can switch the default delivery address
+- Deleting the default address automatically selects another saved address
+- Users cannot access or modify another user's addresses
+- Orders can be created using a saved address_id
+- Orders can automatically use the user's default address
+- Shipping address data is copied into the order at creation time
 
 ## API endpoints
 
@@ -171,4 +180,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 88 automated API tests.
+The project currently includes 97 automated API tests.

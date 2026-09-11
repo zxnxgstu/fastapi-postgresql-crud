@@ -3215,3 +3215,454 @@ def test_order_status_history_tracks_refund():
 
     assert history[2]["old_status"] == "paid"
     assert history[2]["new_status"] == "cancelled"
+
+def test_create_first_address_becomes_default():
+    headers = create_test_user(
+        "addressuser1",
+        "addressuser1@example.com"
+    )
+
+    response = client.post(
+        "/addresses",
+        json={
+            "city": "Kyiv",
+            "street": "Khreshchatyk 1",
+            "postal_code": "01001",
+            "is_default": False
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 201
+
+    address = response.json()
+
+    assert address["city"] == "Kyiv"
+    assert address["street"] == "Khreshchatyk 1"
+    assert address["postal_code"] == "01001"
+    assert address["is_default"] is True
+
+
+def test_get_user_addresses():
+    headers = create_test_user(
+        "addressuser2",
+        "addressuser2@example.com"
+    )
+
+    client.post(
+        "/addresses",
+        json={
+            "city": "Dnipro",
+            "street": "Centralna 10",
+            "postal_code": "49000",
+            "is_default": False
+        },
+        headers=headers
+    )
+
+    client.post(
+        "/addresses",
+        json={
+            "city": "Lviv",
+            "street": "Shevchenka 20",
+            "postal_code": "79000",
+            "is_default": False
+        },
+        headers=headers
+    )
+
+    response = client.get(
+        "/addresses",
+        headers=headers
+    )
+
+    assert response.status_code == 200
+
+    addresses = response.json()
+
+    assert len(addresses) == 2
+    assert addresses[0]["is_default"] is True
+    assert addresses[0]["city"] == "Dnipro"
+    assert addresses[1]["city"] == "Lviv"
+
+
+def test_user_can_change_default_address():
+    headers = create_test_user(
+        "addressuser3",
+        "addressuser3@example.com"
+    )
+
+    first_response = client.post(
+        "/addresses",
+        json={
+            "city": "Kyiv",
+            "street": "Street 1",
+            "postal_code": "01001",
+            "is_default": False
+        },
+        headers=headers
+    )
+
+    first_id = first_response.json()["id"]
+
+    second_response = client.post(
+        "/addresses",
+        json={
+            "city": "Odesa",
+            "street": "Street 2",
+            "postal_code": "65000",
+            "is_default": False
+        },
+        headers=headers
+    )
+
+    second_id = second_response.json()["id"]
+
+    response = client.patch(
+        f"/addresses/{second_id}",
+        json={
+            "city": "Odesa",
+            "street": "Street 2",
+            "postal_code": "65000",
+            "is_default": True
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["is_default"] is True
+
+    addresses_response = client.get(
+        "/addresses",
+        headers=headers
+    )
+
+    addresses = addresses_response.json()
+
+    first_address = next(
+        address
+        for address in addresses
+        if address["id"] == first_id
+    )
+
+    second_address = next(
+        address
+        for address in addresses
+        if address["id"] == second_id
+    )
+
+    assert first_address["is_default"] is False
+    assert second_address["is_default"] is True
+
+
+def test_delete_default_address_selects_next_default():
+    headers = create_test_user(
+        "addressuser4",
+        "addressuser4@example.com"
+    )
+
+    first_response = client.post(
+        "/addresses",
+        json={
+            "city": "Kyiv",
+            "street": "Default Street",
+            "postal_code": "01001",
+            "is_default": False
+        },
+        headers=headers
+    )
+
+    first_id = first_response.json()["id"]
+
+    second_response = client.post(
+        "/addresses",
+        json={
+            "city": "Kharkiv",
+            "street": "Second Street",
+            "postal_code": "61000",
+            "is_default": False
+        },
+        headers=headers
+    )
+
+    second_id = second_response.json()["id"]
+
+    delete_response = client.delete(
+        f"/addresses/{first_id}",
+        headers=headers
+    )
+
+    assert delete_response.status_code == 204
+
+    response = client.get(
+        "/addresses",
+        headers=headers
+    )
+
+    assert response.status_code == 200
+
+    addresses = response.json()
+
+    assert len(addresses) == 1
+    assert addresses[0]["id"] == second_id
+    assert addresses[0]["is_default"] is True
+
+
+def test_user_cannot_modify_another_users_address():
+    headers1 = create_test_user(
+        "addressuser5",
+        "addressuser5@example.com"
+    )
+
+    headers2 = create_test_user(
+        "addressuser6",
+        "addressuser6@example.com"
+    )
+
+    address_response = client.post(
+        "/addresses",
+        json={
+            "city": "Kyiv",
+            "street": "Private Street",
+            "postal_code": "01001",
+            "is_default": False
+        },
+        headers=headers1
+    )
+
+    address_id = address_response.json()["id"]
+
+    update_response = client.patch(
+        f"/addresses/{address_id}",
+        json={
+            "city": "Changed City",
+            "street": "Changed Street",
+            "postal_code": "99999",
+            "is_default": True
+        },
+        headers=headers2
+    )
+
+    assert update_response.status_code == 404
+    assert update_response.json()["detail"] == "Address not found"
+
+    delete_response = client.delete(
+        f"/addresses/{address_id}",
+        headers=headers2
+    )
+
+    assert delete_response.status_code == 404
+    assert delete_response.json()["detail"] == "Address not found"
+
+def test_create_order_with_saved_address():
+    headers = create_test_user(
+        "orderaddressuser1",
+        "orderaddressuser1@example.com"
+    )
+
+    address_response = client.post(
+        "/addresses",
+        json={
+            "city": "Kyiv",
+            "street": "Saved Street 15",
+            "postal_code": "01001",
+            "is_default": True
+        },
+        headers=headers
+    )
+
+    assert address_response.status_code == 201
+
+    address_id = address_response.json()["id"]
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Saved Address Product",
+            "price": 2000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        "/orders",
+        json={
+            "address_id": address_id
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 201
+
+    order = response.json()
+
+    assert order["shipping_city"] == "Kyiv"
+    assert order["shipping_street"] == "Saved Street 15"
+    assert order["shipping_postal_code"] == "01001"
+
+
+def test_user_cannot_create_order_with_another_users_address():
+    headers1 = create_test_user(
+        "orderaddressuser2",
+        "orderaddressuser2@example.com"
+    )
+
+    headers2 = create_test_user(
+        "orderaddressuser3",
+        "orderaddressuser3@example.com"
+    )
+
+    address_response = client.post(
+        "/addresses",
+        json={
+            "city": "Lviv",
+            "street": "Private Street 20",
+            "postal_code": "79000",
+            "is_default": True
+        },
+        headers=headers1
+    )
+
+    assert address_response.status_code == 201
+
+    address_id = address_response.json()["id"]
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Foreign Address Product",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers2
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers2
+    )
+
+    response = client.post(
+        "/orders",
+        json={
+            "address_id": address_id
+        },
+        headers=headers2
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Address not found"
+
+def test_create_order_uses_default_address_automatically():
+    headers = create_test_user(
+        "defaultaddressuser1",
+        "defaultaddressuser1@example.com"
+    )
+
+    address_response = client.post(
+        "/addresses",
+        json={
+            "city": "Kyiv",
+            "street": "Default Street 25",
+            "postal_code": "01001",
+            "is_default": False
+        },
+        headers=headers
+    )
+
+    assert address_response.status_code == 201
+    assert address_response.json()["is_default"] is True
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Default Address Product",
+            "price": 1800,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        "/orders",
+        json={},
+        headers=headers
+    )
+
+    assert response.status_code == 201
+
+    order = response.json()
+
+    assert order["shipping_city"] == "Kyiv"
+    assert order["shipping_street"] == "Default Street 25"
+    assert order["shipping_postal_code"] == "01001"
+
+
+def test_create_order_without_address_fails_when_no_default_address():
+    headers = create_test_user(
+        "defaultaddressuser2",
+        "defaultaddressuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "No Default Address Product",
+            "price": 1200,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        "/orders",
+        json={},
+        headers=headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Default address not found"

@@ -73,6 +73,14 @@ from .order_status_history import (
     get_order_status_history,
 )
 
+from .addresses import (
+    get_user_addresses,
+    get_user_address,
+    create_address,
+    update_address,
+    delete_address,
+)
+
 __all__ = [
     "get_products",
     "get_product",
@@ -119,4 +127,9 @@ __all__ = [
     "refund_payment",
     "create_order_status_history",
     "get_order_status_history",
+    "get_user_addresses",
+    "get_user_address",
+    "create_address",
+    "update_address",
+    "delete_address"
 ]

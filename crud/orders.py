@@ -1,6 +1,13 @@
 from sqlalchemy.orm import Session
 from .order_status_history import create_order_status_history
-from models import CartItem, Order, OrderItem, Product, PromoCode
+from models import (
+    Address,
+    CartItem,
+    Order,
+    OrderItem,
+    Product,
+    PromoCode,
+)
 from schemas import OrderCreate, OrderStatusUpdate
 
 
@@ -49,14 +56,52 @@ def create_order_from_cart(
             total_price * discount_percent // 100
         )
 
+    shipping_city = order_data.shipping_city
+    shipping_street = order_data.shipping_street
+    shipping_postal_code = order_data.shipping_postal_code
+
+    if order_data.address_id is not None:
+        address = (
+            db.query(Address)
+            .filter(
+                Address.id == order_data.address_id,
+                Address.user_id == user_id
+            )
+            .first()
+        )
+
+        if address is None:
+            raise ValueError("Address not found")
+
+        shipping_city = address.city
+        shipping_street = address.street
+        shipping_postal_code = address.postal_code
+
+    elif shipping_city is None:
+        address = (
+            db.query(Address)
+            .filter(
+                Address.user_id == user_id,
+                Address.is_default.is_(True)
+            )
+            .first()
+        )
+
+        if address is None:
+            raise ValueError("Default address not found")
+
+        shipping_city = address.city
+        shipping_street = address.street
+        shipping_postal_code = address.postal_code
+
     order = Order(
         user_id=user_id,
         total_price=total_price,
         promo_code=promo_code,
         discount_percent=discount_percent,
-        shipping_city=order_data.shipping_city,
-        shipping_street=order_data.shipping_street,
-        shipping_postal_code=order_data.shipping_postal_code
+        shipping_city=shipping_city,
+        shipping_street=shipping_street,
+        shipping_postal_code=shipping_postal_code
     )
 
     db.add(order)
