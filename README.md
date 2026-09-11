@@ -323,6 +323,9 @@ REST API для управления товарами, созданный на F
 - Email normalization to lowercase during registration
 - Email normalization during profile updates
 - Case-insensitive duplicate email protection
+- Username whitespace normalization during registration
+- Username whitespace normalization during profile updates
+- Usernames containing only whitespace are rejected
 
 ## API endpoints
 
@@ -351,6 +354,7 @@ REST API для управления товарами, созданный на F
 | GET | `/admin/orders` | Get all orders | Admin |
 | PATCH | `/admin/orders/{order_id}/status` | Change order status | Admin |
 
+
 ## Product filtering and pagination
 
 Products can be filtered by name, stock status and category:
@@ -361,4 +365,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 245 automated API tests.
+The project currently includes 248 automated API tests.

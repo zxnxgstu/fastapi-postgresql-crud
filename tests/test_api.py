@@ -11212,3 +11212,90 @@ def test_email_duplicate_check_is_case_insensitive():
     )
 
     assert second_register.status_code in (400, 409)
+
+def test_registration_trims_username():
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    raw_username = f"   trimreg_{suffix}   "
+    expected_username = f"trimreg_{suffix}"
+    email = f"trimreg_{suffix}@example.com"
+
+    response = client.post(
+        "/register",
+        json={
+            "username": raw_username,
+            "email": email,
+            "password": "password123"
+        }
+    )
+
+    assert response.status_code == 201
+    assert response.json()["username"] == expected_username
+
+
+def test_profile_update_trims_username():
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    username = f"trimprofile_{suffix}"
+    email = f"trimprofile_{suffix}@example.com"
+    password = "password123"
+
+    register_response = client.post(
+        "/register",
+        json={
+            "username": username,
+            "email": email,
+            "password": password
+        }
+    )
+
+    assert register_response.status_code == 201
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": username,
+            "password": password
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = login_response.json()["access_token"]
+
+    raw_new_username = f"   updatedtrim_{suffix}   "
+    expected_username = f"updatedtrim_{suffix}"
+
+    update_response = client.patch(
+        "/me",
+        json={
+            "username": raw_new_username
+        },
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert update_response.status_code == 200
+    assert update_response.json()["username"] == expected_username
+
+
+def test_username_with_only_spaces_is_rejected():
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    response = client.post(
+        "/register",
+        json={
+            "username": "     ",
+            "email": f"spaces_{suffix}@example.com",
+            "password": "password123"
+        }
+    )
+
+    assert response.status_code == 422

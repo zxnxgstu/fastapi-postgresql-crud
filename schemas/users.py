@@ -10,6 +10,13 @@ class UserCreate(BaseModel):
     @classmethod
     def normalize_email(cls, value: str):
         return value.strip().lower()
+    @field_validator("username", mode="before")
+    @classmethod
+    def normalize_username(cls, value):
+        if isinstance(value, str):
+            return value.strip()
+
+        return value
 
 class UserPasswordChange(BaseModel):
     current_password: str = Field(
@@ -67,6 +74,13 @@ class UserProfileUpdate(BaseModel):
             return None
 
         return value.strip().lower()
+    @field_validator("username", mode="before")
+    @classmethod
+    def normalize_username(cls, value):
+        if isinstance(value, str):
+            return value.strip()
+
+        return value
 
     email: str | None = Field(
         default=None,
