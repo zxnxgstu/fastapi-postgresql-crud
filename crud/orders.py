@@ -3,6 +3,7 @@ from .order_status_history import create_order_status_history
 from models import (
     Address,
     CartItem,
+    DeliveryMethod,
     Order,
     OrderItem,
     Product,
@@ -94,6 +95,31 @@ def create_order_from_cart(
         shipping_street = address.street
         shipping_postal_code = address.postal_code
 
+    delivery_method_id = None
+    delivery_method_code = None
+    delivery_method_name = None
+    delivery_price = 0
+
+    if order_data.delivery_method_id is not None:
+        delivery_method = (
+            db.query(DeliveryMethod)
+            .filter(
+                DeliveryMethod.id == order_data.delivery_method_id,
+                DeliveryMethod.active.is_(True)
+            )
+            .first()
+        )
+
+        if delivery_method is None:
+            raise ValueError("Delivery method not found")
+
+        delivery_method_id = delivery_method.id
+        delivery_method_code = delivery_method.code
+        delivery_method_name = delivery_method.name
+        delivery_price = delivery_method.price
+
+        total_price += delivery_price
+
     order = Order(
         user_id=user_id,
         total_price=total_price,
@@ -101,7 +127,11 @@ def create_order_from_cart(
         discount_percent=discount_percent,
         shipping_city=shipping_city,
         shipping_street=shipping_street,
-        shipping_postal_code=shipping_postal_code
+        shipping_postal_code=shipping_postal_code,
+        delivery_method_id=delivery_method_id,
+        delivery_method_code=delivery_method_code,
+        delivery_method_name=delivery_method_name,
+        delivery_price=delivery_price
     )
 
     db.add(order)

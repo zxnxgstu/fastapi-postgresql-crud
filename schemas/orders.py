@@ -18,6 +18,7 @@ class OrderCreate(BaseModel):
     shipping_street: str | None = None
     shipping_postal_code: str | None = None
     address_id: int | None = None
+    delivery_method_id: int | None = None
     promo_code: str | None = None
 
     @model_validator(mode="after")
@@ -52,8 +53,11 @@ class OrderResponse(BaseModel):
     shipping_street: str | None
     shipping_postal_code: str | None
     items: list[OrderItemResponse]
-
     model_config = ConfigDict(from_attributes=True)
+    delivery_method_id: int | None
+    delivery_method_code: str | None
+    delivery_method_name: str | None
+    delivery_price: int
 
 
 class OrderStatusUpdate(BaseModel):

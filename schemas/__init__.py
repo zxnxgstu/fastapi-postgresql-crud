@@ -20,6 +20,11 @@ from .addresses import (
     AddressUpdate,
     AddressResponse,
 )
+from .delivery_methods import (
+    DeliveryMethodCreate,
+    DeliveryMethodUpdate,
+    DeliveryMethodResponse,
+)
 
 __all__ = [
     "ProductCreate",
@@ -51,4 +56,7 @@ __all__ = [
     "AddressCreate",
     "AddressUpdate",
     "AddressResponse"
+    "DeliveryMethodCreate",
+    "DeliveryMethodUpdate",
+    "DeliveryMethodResponse",
 ]

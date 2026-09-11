@@ -91,3 +91,41 @@ class Order(Base):
     cascade="all, delete-orphan",
     order_by="OrderStatusHistory.changed_at"
 )
+    delivery_method_id = Column(
+    Integer,
+    ForeignKey(
+        "delivery_methods.id",
+        ondelete="SET NULL"
+    ),
+    nullable=True
+)
+
+    delivery_method_code = Column(
+    String(50),
+    nullable=True
+)
+
+    delivery_method_name = Column(
+    String(100),
+    nullable=True
+)
+
+    delivery_price = Column(
+    Integer,
+    nullable=False,
+    default=0,
+    server_default="0"
+)
+
+    delivery_method_id = Column(
+    Integer,
+    ForeignKey(
+        "delivery_methods.id",
+        ondelete="SET NULL"
+    ),
+    nullable=True
+)
+
+    delivery_method = relationship(
+    "DeliveryMethod"
+)

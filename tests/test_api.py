@@ -3666,3 +3666,450 @@ def test_create_order_without_address_fails_when_no_default_address():
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Default address not found"
+
+def test_admin_can_create_delivery_method(admin_headers):
+    response = client.post(
+        "/delivery-methods",
+        json={
+            "code": "standard_test",
+            "name": "Standard Test Delivery",
+            "price": 100,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 201
+
+    delivery_method = response.json()
+
+    assert delivery_method["code"] == "standard_test"
+    assert delivery_method["name"] == "Standard Test Delivery"
+    assert delivery_method["price"] == 100
+    assert delivery_method["active"] is True
+
+
+def test_user_cannot_create_delivery_method():
+    headers = create_test_user(
+        "deliveryuser1",
+        "deliveryuser1@example.com"
+    )
+
+    response = client.post(
+        "/delivery-methods",
+        json={
+            "code": "forbidden_delivery",
+            "name": "Forbidden Delivery",
+            "price": 150,
+            "active": True
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 403
+
+
+def test_public_delivery_methods_show_only_active(admin_headers):
+    active_response = client.post(
+        "/delivery-methods",
+        json={
+            "code": "active_delivery_test",
+            "name": "Active Delivery Test",
+            "price": 200,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert active_response.status_code == 201
+
+    inactive_response = client.post(
+        "/delivery-methods",
+        json={
+            "code": "inactive_delivery_test",
+            "name": "Inactive Delivery Test",
+            "price": 300,
+            "active": False
+        },
+        headers=admin_headers
+    )
+
+    assert inactive_response.status_code == 201
+
+    public_response = client.get(
+        "/delivery-methods"
+    )
+
+    assert public_response.status_code == 200
+
+    public_methods = public_response.json()
+
+    public_codes = [
+        method["code"]
+        for method in public_methods
+    ]
+
+    assert "active_delivery_test" in public_codes
+    assert "inactive_delivery_test" not in public_codes
+
+    admin_response = client.get(
+        "/delivery-methods/admin",
+        headers=admin_headers
+    )
+
+    assert admin_response.status_code == 200
+
+    admin_methods = admin_response.json()
+
+    admin_codes = [
+        method["code"]
+        for method in admin_methods
+    ]
+
+    assert "active_delivery_test" in admin_codes
+    assert "inactive_delivery_test" in admin_codes
+
+
+def test_duplicate_delivery_method_code_is_rejected(admin_headers):
+    first_response = client.post(
+        "/delivery-methods",
+        json={
+            "code": "duplicate_delivery_test",
+            "name": "Duplicate Delivery",
+            "price": 120,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert first_response.status_code == 201
+
+    second_response = client.post(
+        "/delivery-methods",
+        json={
+            "code": "duplicate_delivery_test",
+            "name": "Another Delivery",
+            "price": 500,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert second_response.status_code == 400
+    assert (
+        second_response.json()["detail"]
+        == "Delivery method already exists"
+    )
+
+
+def test_admin_can_update_and_disable_delivery_method(admin_headers):
+    create_response = client.post(
+        "/delivery-methods",
+        json={
+            "code": "update_delivery_test",
+            "name": "Old Delivery Name",
+            "price": 100,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert create_response.status_code == 201
+
+    delivery_method_id = create_response.json()["id"]
+
+    update_response = client.patch(
+        f"/delivery-methods/{delivery_method_id}",
+        json={
+            "name": "Updated Delivery Name",
+            "price": 250,
+            "active": False
+        },
+        headers=admin_headers
+    )
+
+    assert update_response.status_code == 200
+
+    updated_method = update_response.json()
+
+    assert updated_method["name"] == "Updated Delivery Name"
+    assert updated_method["price"] == 250
+    assert updated_method["active"] is False
+
+    public_response = client.get(
+        "/delivery-methods"
+    )
+
+    public_codes = [
+        method["code"]
+        for method in public_response.json()
+    ]
+
+    assert "update_delivery_test" not in public_codes
+
+def test_order_with_delivery_method_adds_delivery_price(admin_headers):
+    headers = create_test_user(
+        "deliveryorderuser1",
+        "deliveryorderuser1@example.com"
+    )
+
+    delivery_response = client.post(
+        "/delivery-methods",
+        json={
+            "code": "order_standard_test",
+            "name": "Order Standard Delivery",
+            "price": 250,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert delivery_response.status_code == 201
+
+    delivery_method_id = delivery_response.json()["id"]
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Delivery Order Product",
+            "price": 2000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 2
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        "/orders",
+        json={
+            **SHIPPING_DATA,
+            "delivery_method_id": delivery_method_id
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 201
+
+    order = response.json()
+
+    assert order["delivery_method_id"] == delivery_method_id
+    assert order["delivery_method_code"] == "order_standard_test"
+    assert order["delivery_method_name"] == "Order Standard Delivery"
+    assert order["delivery_price"] == 250
+
+    # 2000 * 2 + 250 доставки
+    assert order["total_price"] == 4250
+
+
+def test_order_delivery_snapshot_does_not_change(admin_headers):
+    headers = create_test_user(
+        "deliveryorderuser2",
+        "deliveryorderuser2@example.com"
+    )
+
+    delivery_response = client.post(
+        "/delivery-methods",
+        json={
+            "code": "snapshot_delivery_test",
+            "name": "Original Delivery",
+            "price": 150,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert delivery_response.status_code == 201
+
+    delivery_method_id = delivery_response.json()["id"]
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Snapshot Delivery Product",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json={
+            **SHIPPING_DATA,
+            "delivery_method_id": delivery_method_id
+        },
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+
+    order_id = order_response.json()["id"]
+
+    update_response = client.patch(
+        f"/delivery-methods/{delivery_method_id}",
+        json={
+            "name": "Changed Delivery",
+            "price": 500
+        },
+        headers=admin_headers
+    )
+
+    assert update_response.status_code == 200
+
+    response = client.get(
+        f"/orders/{order_id}",
+        headers=headers
+    )
+
+    assert response.status_code == 200
+
+    order = response.json()
+
+    assert order["delivery_method_name"] == "Original Delivery"
+    assert order["delivery_price"] == 150
+    assert order["total_price"] == 1150
+
+
+def test_inactive_delivery_method_cannot_be_used(admin_headers):
+    headers = create_test_user(
+        "deliveryorderuser3",
+        "deliveryorderuser3@example.com"
+    )
+
+    delivery_response = client.post(
+        "/delivery-methods",
+        json={
+            "code": "inactive_order_delivery_test",
+            "name": "Inactive Order Delivery",
+            "price": 300,
+            "active": False
+        },
+        headers=admin_headers
+    )
+
+    assert delivery_response.status_code == 201
+
+    delivery_method_id = delivery_response.json()["id"]
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Inactive Delivery Product",
+            "price": 1200,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        "/orders",
+        json={
+            **SHIPPING_DATA,
+            "delivery_method_id": delivery_method_id
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Delivery method not found"
+
+
+def test_payment_includes_delivery_price(admin_headers):
+    headers = create_test_user(
+        "deliveryorderuser4",
+        "deliveryorderuser4@example.com"
+    )
+
+    delivery_response = client.post(
+        "/delivery-methods",
+        json={
+            "code": "payment_delivery_test",
+            "name": "Payment Delivery",
+            "price": 400,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert delivery_response.status_code == 201
+
+    delivery_method_id = delivery_response.json()["id"]
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Payment Delivery Product",
+            "price": 1600,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json={
+            **SHIPPING_DATA,
+            "delivery_method_id": delivery_method_id
+        },
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+    assert order_response.json()["total_price"] == 2000
+
+    order_id = order_response.json()["id"]
+
+    payment_response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert payment_response.status_code == 201
+    assert payment_response.json()["amount"] == 2000

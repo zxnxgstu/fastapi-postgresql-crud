@@ -12,6 +12,7 @@ from .price_drop_notification import PriceDropNotification
 from .payment import Payment
 from .order_status_history import OrderStatusHistory
 from .address import Address
+from .delivery_method import DeliveryMethod
 
 __all__ = [
     "CartItem",
@@ -29,4 +30,5 @@ __all__ = [
     "OrderStatusHistory"
     "OrderStatusHistory",
     "Address"
+    "DeliveryMethod"
 ]

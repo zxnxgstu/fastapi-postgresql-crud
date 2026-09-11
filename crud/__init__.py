@@ -81,6 +81,15 @@ from .addresses import (
     delete_address,
 )
 
+from .delivery_methods import (
+    get_active_delivery_methods,
+    get_all_delivery_methods,
+    get_delivery_method,
+    get_delivery_method_by_code,
+    create_delivery_method,
+    update_delivery_method,
+)
+
 __all__ = [
     "get_products",
     "get_product",
@@ -132,4 +141,10 @@ __all__ = [
     "create_address",
     "update_address",
     "delete_address"
+    "get_active_delivery_methods",
+    "get_all_delivery_methods",
+    "get_delivery_method",
+    "get_delivery_method_by_code",
+    "create_delivery_method",
+    "update_delivery_method"
 ]
