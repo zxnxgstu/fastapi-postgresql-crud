@@ -219,6 +219,10 @@ REST API для управления товарами, созданный на F
 - Order creation decreases stock and records the movement
 - Cancellation and refund restore stock and record the movement
 - Admins can view stock movement history for each product
+- Manual product restocking for admins
+- Restock quantity must be greater than zero
+- Restocking updates product stock and in_stock status
+- Every restock is recorded in stock movement history
 
 ## API endpoints
 
@@ -257,4 +261,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 150 automated API tests.
+The project currently includes 154 automated API tests.

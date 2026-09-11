@@ -5,6 +5,7 @@ from .products import (
     update_product,
     delete_product,
     get_product_price_history,
+    restock_product,
 )
 
 from .categories import (
@@ -111,6 +112,7 @@ from .stock_movements import (
     get_product_stock_movements,
 )
 
+
 __all__ = [
     "get_products",
     "get_product",
@@ -181,4 +183,5 @@ __all__ = [
     "get_low_stock_products"
     "create_stock_movement",
     "get_product_stock_movements",
+    "restock_product",
 ]

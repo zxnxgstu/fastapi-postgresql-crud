@@ -6712,3 +6712,142 @@ def test_regular_user_cannot_view_stock_movements():
     )
 
     assert response.status_code == 403
+
+def test_admin_can_restock_product(admin_headers):
+    headers = create_test_user(
+        "restockuser1",
+        "restockuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Restock Product 1",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 2
+        },
+        headers=headers
+    )
+
+    assert product_response.status_code == 201
+
+    product_id = product_response.json()["id"]
+
+    response = client.post(
+        f"/products/{product_id}/restock",
+        json={
+            "quantity": 5
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    product = response.json()
+
+    assert product["stock_quantity"] == 7
+    assert product["in_stock"] is True
+
+
+def test_regular_user_cannot_restock_product():
+    headers = create_test_user(
+        "restockuser2",
+        "restockuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Restock Product 2",
+            "price": 1600,
+            "in_stock": True,
+            "stock_quantity": 3
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    response = client.post(
+        f"/products/{product_id}/restock",
+        json={
+            "quantity": 5
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 403
+
+
+def test_restock_quantity_must_be_positive(admin_headers):
+    headers = create_test_user(
+        "restockuser3",
+        "restockuser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Restock Product 3",
+            "price": 1700,
+            "in_stock": True,
+            "stock_quantity": 4
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    response = client.post(
+        f"/products/{product_id}/restock",
+        json={
+            "quantity": 0
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 422
+
+
+def test_restock_creates_stock_movement(admin_headers):
+    headers = create_test_user(
+        "restockuser4",
+        "restockuser4@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Restock Product 4",
+            "price": 1800,
+            "in_stock": True,
+            "stock_quantity": 1
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    restock_response = client.post(
+        f"/products/{product_id}/restock",
+        json={
+            "quantity": 6
+        },
+        headers=admin_headers
+    )
+
+    assert restock_response.status_code == 200
+
+    history_response = client.get(
+        f"/products/{product_id}/stock-movements",
+        headers=admin_headers
+    )
+
+    assert history_response.status_code == 200
+
+    history = history_response.json()
+
+    assert len(history) == 1
+    assert history[0]["quantity_change"] == 6
+    assert history[0]["reason"] == "restock"

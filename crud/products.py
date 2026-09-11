@@ -6,6 +6,7 @@ from models import (
     WishlistItem,
 )
 from schemas import ProductCreate
+from .stock_movements import create_stock_movement
 
 
 def get_products(
@@ -173,3 +174,23 @@ def get_product_price_history(
         .order_by(PriceHistory.changed_at.desc())
         .all()
     )
+
+def restock_product(
+    db: Session,
+    product: Product,
+    quantity: int
+):
+    product.stock_quantity += quantity
+    product.in_stock = product.stock_quantity > 0
+
+    create_stock_movement(
+        db=db,
+        product_id=product.id,
+        quantity_change=quantity,
+        reason="restock"
+    )
+
+    db.commit()
+    db.refresh(product)
+
+    return product
