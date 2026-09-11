@@ -17,12 +17,15 @@ def get_products(
     skip: int = 0,
     limit: int = 10,
     sort_by: str = "id",
-    order: str = "asc"
+    order: str = "asc",
+    active: bool | None = True
 ):
-    query = (
-        db.query(Product)
-        .filter(Product.is_active.is_(True))
-    )
+    query = db.query(Product)
+
+    if active is not None:
+        query = query.filter(
+            Product.is_active == active
+        )
 
     if search:
         query = query.filter(
@@ -172,6 +175,17 @@ def delete_product(db: Session, product_id: int):
     db.refresh(db_product)
 
     return True
+
+def restore_product(
+    db: Session,
+    product: Product
+):
+    product.is_active = True
+
+    db.commit()
+    db.refresh(product)
+
+    return product
 
 def get_product_price_history(
     db: Session,

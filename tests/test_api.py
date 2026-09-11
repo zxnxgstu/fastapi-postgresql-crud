@@ -8031,3 +8031,211 @@ def test_admin_orders_reject_invalid_total_range(admin_headers):
         response.json()["detail"]
         == "min_total cannot be greater than max_total"
     )
+
+def test_admin_can_view_active_and_archived_products(admin_headers):
+    headers = create_test_user(
+        "adminproductuser1",
+        "adminproductuser1@example.com"
+    )
+
+    active_response = client.post(
+        "/products",
+        json={
+            "name": "Admin Catalog Pair Active",
+            "price": 7100,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    archived_response = client.post(
+        "/products",
+        json={
+            "name": "Admin Catalog Pair Archived",
+            "price": 7200,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    active_id = active_response.json()["id"]
+    archived_id = archived_response.json()["id"]
+
+    client.delete(
+        f"/products/{archived_id}",
+        headers=admin_headers
+    )
+
+    response = client.get(
+        "/admin/products?search=Admin%20Catalog%20Pair",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+    ids = [product["id"] for product in data]
+
+    assert active_id in ids
+    assert archived_id in ids
+
+
+def test_admin_products_can_filter_archived_products(admin_headers):
+    headers = create_test_user(
+        "adminproductuser2",
+        "adminproductuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Archived Admin Filter Product",
+            "price": 7300,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.delete(
+        f"/products/{product_id}",
+        headers=admin_headers
+    )
+
+    response = client.get(
+        (
+            "/admin/products"
+            "?active=false"
+            "&search=Archived%20Admin%20Filter%20Product"
+        ),
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1
+    assert data[0]["id"] == product_id
+    assert data[0]["is_active"] is False
+
+
+def test_admin_products_can_filter_active_products(admin_headers):
+    headers = create_test_user(
+        "adminproductuser3",
+        "adminproductuser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Active Admin Filter Product",
+            "price": 7400,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    response = client.get(
+        (
+            "/admin/products"
+            "?active=true"
+            "&search=Active%20Admin%20Filter%20Product"
+        ),
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1
+    assert data[0]["id"] == product_id
+    assert data[0]["is_active"] is True
+
+
+def test_admin_can_restore_archived_product(admin_headers):
+    headers = create_test_user(
+        "adminproductuser4",
+        "adminproductuser4@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Restorable Product",
+            "price": 7500,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    archive_response = client.delete(
+        f"/products/{product_id}",
+        headers=admin_headers
+    )
+
+    assert archive_response.status_code == 204
+
+    hidden_response = client.get(
+        f"/products/{product_id}"
+    )
+
+    assert hidden_response.status_code == 404
+
+    restore_response = client.post(
+        f"/products/{product_id}/restore",
+        headers=admin_headers
+    )
+
+    assert restore_response.status_code == 200
+    assert restore_response.json()["is_active"] is True
+
+    public_response = client.get(
+        f"/products/{product_id}"
+    )
+
+    assert public_response.status_code == 200
+    assert public_response.json()["id"] == product_id
+
+
+def test_regular_user_cannot_restore_product(admin_headers):
+    headers = create_test_user(
+        "adminproductuser5",
+        "adminproductuser5@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Protected Restore Product",
+            "price": 7600,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.delete(
+        f"/products/{product_id}",
+        headers=admin_headers
+    )
+
+    response = client.post(
+        f"/products/{product_id}/restore",
+        headers=headers
+    )
+
+    assert response.status_code == 403

@@ -12,6 +12,7 @@ from routers.notifications import router as notifications_router
 from routers.addresses import router as addresses_router
 from routers.delivery_methods import router as delivery_methods_router
 from routers.inventory import router as inventory_router
+from routers.admin_products import router as admin_products_router
 
 app = FastAPI(
     title="FastAPI PostgreSQL CRUD API"
@@ -29,6 +30,7 @@ app.include_router(notifications_router)
 app.include_router(addresses_router)
 app.include_router(delivery_methods_router)
 app.include_router(inventory_router)
+app.include_router(admin_products_router)
 
 @app.get("/")
 def home():

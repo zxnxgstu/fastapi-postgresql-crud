@@ -250,6 +250,11 @@ REST API для управления товарами, созданный на F
 - Admin order filtering by minimum and maximum total
 - Combined admin order filters
 - Admin order pagination
+- Admin product catalog includes active and archived products
+- Admin product filtering by active/archive status
+- Archived products can be restored by admins
+- Restored products become available in the public catalog again
+- Regular users cannot restore archived products
 
 ## API endpoints
 
@@ -288,4 +293,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 180 automated API tests.
+The project currently includes 185 automated API tests.

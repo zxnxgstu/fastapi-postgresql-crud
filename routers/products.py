@@ -129,6 +129,37 @@ def delete_product(
 
     return Response(status_code=204)
 
+@router.post(
+    "/{product_id}/restore",
+    response_model=ProductResponse
+)
+def restore_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin)
+):
+    product = crud.get_product(
+        db,
+        product_id
+    )
+
+    if product is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found"
+        )
+
+    if product.is_active:
+        raise HTTPException(
+            status_code=400,
+            detail="Product is already active"
+        )
+
+    return crud.restore_product(
+        db,
+        product
+    )
+
 @router.get(
     "/{product_id}/price-history",
     response_model=list[PriceHistoryResponse]

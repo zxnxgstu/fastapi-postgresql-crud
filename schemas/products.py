@@ -16,7 +16,8 @@ class ProductResponse(BaseModel):
     in_stock: bool
     stock_quantity: int
     category_id: int | None = None
-    
+    is_active: bool
+
     average_rating: float
     reviews_count: int
 
