@@ -40,6 +40,7 @@ from .inventory_stats import LowStockProductResponse
 from .stock_movements import StockMovementResponse
 from .inventory import RestockRequest
 from .stock_adjustment import StockAdjustmentRequest
+from .inventory_summary import InventorySummaryResponse
 
 __all__ = [
     "ProductCreate",
@@ -86,5 +87,6 @@ __all__ = [
     "LowStockProductResponse"
     "StockMovementResponse",
     "RestockRequest",
-    "StockAdjustmentRequest"
+    "StockAdjustmentRequest",
+    "InventorySummaryResponse"
 ]

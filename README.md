@@ -228,6 +228,9 @@ REST API для управления товарами, созданный на F
 - Stock quantity cannot become negative
 - Every manual adjustment is recorded in stock movement history
 - Adjustment reasons are stored with each movement
+- Inventory summary for admins
+- Shows total products, in-stock products, out-of-stock products, total units, and inventory value
+- Inventory value is calculated as product price × stock quantity
 
 ## API endpoints
 
@@ -266,4 +269,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 158 automated API tests.
+The project currently includes 161 automated API tests.

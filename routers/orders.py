@@ -19,6 +19,7 @@ from schemas import (
     DailySalesResponse,
     OrderStatusStatsResponse,
     LowStockProductResponse,
+    InventorySummaryResponse,
 )
 from dependencies import (
     get_current_admin,
@@ -563,3 +564,13 @@ def get_admin_low_stock_products(
         db=db,
         threshold=threshold
     )
+
+@router.get(
+    "/admin/inventory/summary",
+    response_model=InventorySummaryResponse
+)
+def get_admin_inventory_summary(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin)
+):
+    return crud.get_inventory_summary(db)

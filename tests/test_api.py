@@ -7010,3 +7010,127 @@ def test_stock_adjustment_creates_stock_movement(
     assert len(history) == 1
     assert history[0]["quantity_change"] == -2
     assert history[0]["reason"] == "damaged"
+
+def test_admin_can_view_inventory_summary(admin_headers):
+    response = client.get(
+        "/admin/inventory/summary",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert "total_products" in data
+    assert "in_stock_products" in data
+    assert "out_of_stock_products" in data
+    assert "total_units" in data
+    assert "inventory_value" in data
+
+
+def test_regular_user_cannot_view_inventory_summary():
+    headers = create_test_user(
+        "inventorysummaryuser1",
+        "inventorysummaryuser1@example.com"
+    )
+
+    response = client.get(
+        "/admin/inventory/summary",
+        headers=headers
+    )
+
+    assert response.status_code == 403
+
+
+def test_inventory_summary_counts_products_units_and_value(
+    admin_headers
+):
+    initial_response = client.get(
+        "/admin/inventory/summary",
+        headers=admin_headers
+    )
+
+    assert initial_response.status_code == 200
+
+    initial = initial_response.json()
+
+    headers = create_test_user(
+        "inventorysummaryuser2",
+        "inventorysummaryuser2@example.com"
+    )
+
+    product1_response = client.post(
+        "/products",
+        json={
+            "name": "Inventory Summary Product 1",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 3
+        },
+        headers=headers
+    )
+
+    product2_response = client.post(
+        "/products",
+        json={
+            "name": "Inventory Summary Product 2",
+            "price": 2000,
+            "in_stock": True,
+            "stock_quantity": 2
+        },
+        headers=headers
+    )
+
+    product3_response = client.post(
+        "/products",
+        json={
+            "name": "Inventory Summary Product 3",
+            "price": 3000,
+            "in_stock": False,
+            "stock_quantity": 0
+        },
+        headers=headers
+    )
+
+    assert product1_response.status_code == 201
+    assert product2_response.status_code == 201
+    assert product3_response.status_code == 201
+
+    final_response = client.get(
+        "/admin/inventory/summary",
+        headers=admin_headers
+    )
+
+    assert final_response.status_code == 200
+
+    final = final_response.json()
+
+    assert (
+        final["total_products"]
+        == initial["total_products"] + 3
+    )
+
+    assert (
+        final["in_stock_products"]
+        == initial["in_stock_products"] + 2
+    )
+
+    assert (
+        final["out_of_stock_products"]
+        == initial["out_of_stock_products"] + 1
+    )
+
+    assert (
+        final["total_units"]
+        == initial["total_units"] + 5
+    )
+
+    expected_added_value = (
+        1000 * 3
+        + 2000 * 2
+    )
+
+    assert (
+        final["inventory_value"]
+        == initial["inventory_value"] + expected_added_value
+    )

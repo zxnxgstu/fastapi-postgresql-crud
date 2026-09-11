@@ -107,6 +107,7 @@ from .admin_stats import (
     get_orders_by_status,
     get_sales_by_day,
     get_top_products,
+    get_inventory_summary,
 )
 from .stock_movements import (
     create_stock_movement,
@@ -186,4 +187,5 @@ __all__ = [
     "get_product_stock_movements",
     "restock_product",
     "adjust_product_stock"
+    "get_inventory_summary",
 ]

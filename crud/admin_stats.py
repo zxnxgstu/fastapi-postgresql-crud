@@ -156,3 +156,51 @@ def get_low_stock_products(
         }
         for product in products
     ]
+
+def get_inventory_summary(db: Session):
+    total_products = (
+        db.query(func.count(Product.id))
+        .scalar()
+    )
+
+    in_stock_products = (
+        db.query(func.count(Product.id))
+        .filter(Product.stock_quantity > 0)
+        .scalar()
+    )
+
+    out_of_stock_products = (
+        db.query(func.count(Product.id))
+        .filter(Product.stock_quantity == 0)
+        .scalar()
+    )
+
+    total_units = (
+        db.query(
+            func.coalesce(
+                func.sum(Product.stock_quantity),
+                0
+            )
+        )
+        .scalar()
+    )
+
+    inventory_value = (
+        db.query(
+            func.coalesce(
+                func.sum(
+                    Product.price * Product.stock_quantity
+                ),
+                0
+            )
+        )
+        .scalar()
+    )
+
+    return {
+        "total_products": total_products,
+        "in_stock_products": in_stock_products,
+        "out_of_stock_products": out_of_stock_products,
+        "total_units": total_units,
+        "inventory_value": inventory_value,
+    }
