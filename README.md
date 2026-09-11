@@ -57,6 +57,10 @@ REST API для управления товарами, созданный на F
 - Automatic cart cleanup after checkout
 - Admin order management
 - Order status management
+- Product stock quantity
+- Stock validation when adding products to cart
+- Automatic stock reduction after order creation
+- Automatic out-of-stock status when quantity reaches zero
 
 ## API endpoints
 
@@ -95,4 +99,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 34 automated API tests.
+The project currently includes 37 automated API tests.

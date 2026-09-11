@@ -17,10 +17,16 @@ def create_order(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    order = crud.create_order_from_cart(
-        db,
-        current_user.id
-    )
+    try:
+        order = crud.create_order_from_cart(
+            db,
+            current_user.id
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="Not enough stock"
+        )
 
     if order is None:
         raise HTTPException(

@@ -45,6 +45,28 @@ def add_cart_item(
             detail="Product not found"
         )
 
+    existing_item = crud.get_cart_item_by_product(
+        db,
+        current_user.id,
+        item.product_id
+    )
+
+    current_quantity = (
+        existing_item.quantity
+        if existing_item
+        else 0
+    )
+
+    requested_quantity = (
+        current_quantity + item.quantity
+    )
+
+    if requested_quantity > product.stock_quantity:
+        raise HTTPException(
+            status_code=400,
+            detail="Not enough stock"
+        )
+
     return crud.add_cart_item(
         db,
         current_user.id,

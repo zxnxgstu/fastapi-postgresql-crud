@@ -11,6 +11,11 @@ class Product(Base):
     name = Column(String(100), nullable=False)
     price = Column(Integer, nullable=False)
     in_stock = Column(Boolean, nullable=False)
+    stock_quantity = Column(
+    Integer,
+    nullable=False,
+    server_default="0"
+)
 
     category_id = Column(
         Integer,

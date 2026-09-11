@@ -5,6 +5,7 @@ class ProductCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     price: int = Field(ge=0)
     in_stock: bool
+    stock_quantity: int | None = Field(default=None, ge=0)
     category_id: int | None = None
 
 
@@ -13,6 +14,7 @@ class ProductResponse(BaseModel):
     name: str
     price: int
     in_stock: bool
+    stock_quantity: int
     category_id: int | None = None
 
     model_config = ConfigDict(from_attributes=True)

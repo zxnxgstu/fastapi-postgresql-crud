@@ -316,7 +316,8 @@ def test_add_product_to_cart(auth_headers):
         json={
             "name": "Cart Product",
             "price": 1500,
-            "in_stock": True
+            "in_stock": True,
+            "stock_quantity": 10
         },
         headers=auth_headers
     )
@@ -345,7 +346,8 @@ def test_add_same_product_increases_quantity(auth_headers):
         json={
             "name": "Repeated Cart Product",
             "price": 2000,
-            "in_stock": True
+            "in_stock": True,
+            "stock_quantity": 10
         },
         headers=auth_headers
     )
@@ -396,7 +398,8 @@ def test_update_cart_item(auth_headers):
         json={
             "name": "Update Cart Product",
             "price": 2500,
-            "in_stock": True
+            "in_stock": True,
+            "stock_quantity": 10
         },
         headers=auth_headers
     )
@@ -430,7 +433,8 @@ def test_delete_cart_item(auth_headers):
         json={
             "name": "Delete Cart Product",
             "price": 3000,
-            "in_stock": True
+            "in_stock": True,
+            "stock_quantity": 10
         },
         headers=auth_headers
     )
@@ -488,7 +492,8 @@ def test_user_cannot_modify_another_users_cart(auth_headers):
         json={
             "name": "Private Cart Product",
             "price": 1800,
-            "in_stock": True
+            "in_stock": True,
+            "stock_quantity": 10
         },
         headers=auth_headers
     )
@@ -573,7 +578,8 @@ def test_create_order_from_cart():
         json={
             "name": "Order Product",
             "price": 1500,
-            "in_stock": True
+            "in_stock": True,
+            "stock_quantity": 10
         },
         headers=headers
     )
@@ -640,7 +646,8 @@ def test_get_my_orders():
         json={
             "name": "My Orders Product",
             "price": 2000,
-            "in_stock": True
+            "in_stock": True,
+            "stock_quantity": 10
         },
         headers=headers
     )
@@ -686,7 +693,8 @@ def test_user_cannot_view_another_users_order():
         json={
             "name": "Private Order Product",
             "price": 2500,
-            "in_stock": True
+            "in_stock": True,
+            "stock_quantity": 10
         },
         headers=first_headers
     )
@@ -749,7 +757,8 @@ def test_admin_can_update_order_status(admin_headers):
         json={
             "name": "Status Product",
             "price": 3500,
-            "in_stock": True
+            "in_stock": True,
+            "stock_quantity": 10
         },
         headers=headers
     )
@@ -790,3 +799,106 @@ def test_invalid_order_status(admin_headers):
     )
 
     assert response.status_code == 422
+
+def test_cannot_add_more_than_stock(auth_headers):
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Limited Product",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 2
+        },
+        headers=auth_headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    response = client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 3
+        },
+        headers=auth_headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Not enough stock"
+
+
+def test_order_decreases_stock(auth_headers):
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Stock Product",
+            "price": 2000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=auth_headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 2
+        },
+        headers=auth_headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        headers=auth_headers
+    )
+
+    assert order_response.status_code == 201
+
+    product_response = client.get(
+        f"/products/{product_id}"
+    )
+
+    assert product_response.status_code == 200
+    assert product_response.json()["stock_quantity"] == 3
+    assert product_response.json()["in_stock"] is True
+
+
+def test_product_becomes_out_of_stock(auth_headers):
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Last Product",
+            "price": 3000,
+            "in_stock": True,
+            "stock_quantity": 1
+        },
+        headers=auth_headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=auth_headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        headers=auth_headers
+    )
+
+    assert order_response.status_code == 201
+
+    product_response = client.get(
+        f"/products/{product_id}"
+    )
+
+    assert product_response.json()["stock_quantity"] == 0
+    assert product_response.json()["in_stock"] is False

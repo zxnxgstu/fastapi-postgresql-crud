@@ -35,10 +35,16 @@ def get_product(db: Session, product_id: int):
 
 
 def create_product(db: Session, product: ProductCreate):
+    stock_quantity = product.stock_quantity
+
+    if stock_quantity is None:
+        stock_quantity = 1 if product.in_stock else 0
+
     db_product = Product(
         name=product.name,
         price=product.price,
-        in_stock=product.in_stock,
+        in_stock=stock_quantity > 0,
+        stock_quantity=stock_quantity,
         category_id=product.category_id
     )
 
@@ -59,9 +65,20 @@ def update_product(
     if db_product is None:
         return None
 
+    stock_quantity = updated_product.stock_quantity
+
+    if stock_quantity is None:
+        stock_quantity = db_product.stock_quantity
+
+        if updated_product.in_stock is False:
+            stock_quantity = 0
+        elif updated_product.in_stock is True and stock_quantity == 0:
+            stock_quantity = 1
+
     db_product.name = updated_product.name
     db_product.price = updated_product.price
-    db_product.in_stock = updated_product.in_stock
+    db_product.stock_quantity = stock_quantity
+    db_product.in_stock = stock_quantity > 0
     db_product.category_id = updated_product.category_id
 
     db.commit()

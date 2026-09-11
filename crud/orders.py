@@ -17,6 +17,12 @@ def create_order_from_cart(
     if not cart_items:
         return None
 
+    for cart_item in cart_items:
+        product = cart_item.product
+
+        if product.stock_quantity < cart_item.quantity:
+            raise ValueError("Not enough stock")
+
     total_price = sum(
         item.product.price * item.quantity
         for item in cart_items
@@ -31,15 +37,20 @@ def create_order_from_cart(
     db.flush()
 
     for cart_item in cart_items:
+        product = cart_item.product
+
         order_item = OrderItem(
             order_id=order.id,
-            product_id=cart_item.product.id,
-            product_name=cart_item.product.name,
-            price=cart_item.product.price,
+            product_id=product.id,
+            product_name=product.name,
+            price=product.price,
             quantity=cart_item.quantity
         )
 
         db.add(order_item)
+
+        product.stock_quantity -= cart_item.quantity
+        product.in_stock = product.stock_quantity > 0
 
     for cart_item in cart_items:
         db.delete(cart_item)
@@ -48,7 +59,6 @@ def create_order_from_cart(
     db.refresh(order)
 
     return order
-
 
 def get_user_orders(
     db: Session,

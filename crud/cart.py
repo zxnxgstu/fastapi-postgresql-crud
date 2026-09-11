@@ -26,6 +26,19 @@ def get_cart_item(
         .first()
     )
 
+def get_cart_item_by_product(
+    db: Session,
+    user_id: int,
+    product_id: int
+):
+    return (
+        db.query(CartItem)
+        .filter(
+            CartItem.user_id == user_id,
+            CartItem.product_id == product_id
+        )
+        .first()
+    )
 
 def add_cart_item(
     db: Session,

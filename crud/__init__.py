@@ -19,6 +19,7 @@ from .cart import (
     add_cart_item,
     update_cart_item,
     delete_cart_item,
+    get_cart_item_by_product,
 )
 
 from .orders import (
@@ -29,6 +30,7 @@ from .orders import (
     get_all_orders,
     update_order_status,
 )
+
 
 __all__ = [
     "get_products",
@@ -51,4 +53,5 @@ __all__ = [
     "get_order",
     "get_all_orders",
     "update_order_status"
+    "get_cart_item_by_product",
 ]
