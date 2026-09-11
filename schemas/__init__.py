@@ -37,6 +37,7 @@ from .admin_stats import AdminStatsResponse
 from .top_products import TopProductResponse
 from .sales_stats import DailySalesResponse
 from .inventory_stats import LowStockProductResponse
+from .stock_movements import StockMovementResponse
 
 __all__ = [
     "ProductCreate",
@@ -81,4 +82,5 @@ __all__ = [
     "DailySalesResponse"
     "OrderStatusStatsResponse",
     "LowStockProductResponse"
+    "StockMovementResponse",
 ]

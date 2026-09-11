@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from .order_status_history import create_order_status_history
 from models import Order, Payment, Product
+from .stock_movements import create_stock_movement
 
 
 def get_payment_by_order(
@@ -72,6 +73,12 @@ def refund_payment(
             product.stock_quantity += order_item.quantity
             product.in_stock = True
 
+            create_stock_movement(
+                db=db,
+                product_id=product.id,
+                quantity_change=order_item.quantity,
+                reason="refund"
+            )
     payment.status = "refunded"
     order.status = "cancelled"
 

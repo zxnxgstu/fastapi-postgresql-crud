@@ -215,6 +215,10 @@ REST API для управления товарами, созданный на F
 - Low stock inventory monitoring for admins
 - Admins can filter products by stock threshold
 - Low stock products are sorted by remaining quantity
+- Stock movement history
+- Order creation decreases stock and records the movement
+- Cancellation and refund restore stock and record the movement
+- Admins can view stock movement history for each product
 
 ## API endpoints
 
@@ -253,4 +257,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 146 automated API tests.
+The project currently includes 150 automated API tests.

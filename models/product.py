@@ -68,3 +68,9 @@ class Product(Base):
     back_populates="product",
     cascade="all, delete-orphan"
 )
+    stock_movements = relationship(
+    "StockMovement",
+    back_populates="product",
+    cascade="all, delete-orphan",
+    order_by="StockMovement.created_at"
+)

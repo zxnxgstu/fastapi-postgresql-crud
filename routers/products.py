@@ -4,7 +4,12 @@ from typing import Literal
 import crud
 from dependencies import get_db, get_current_user, get_current_admin
 from models import User
-from schemas import ProductCreate, ProductResponse, PriceHistoryResponse
+from schemas import (
+    ProductCreate,
+    ProductResponse,
+    PriceHistoryResponse,
+    StockMovementResponse,
+)
 
 
 router = APIRouter(
@@ -142,6 +147,31 @@ def get_price_history(
         )
 
     return crud.get_product_price_history(
+        db,
+        product_id
+    )
+
+@router.get(
+    "/{product_id}/stock-movements",
+    response_model=list[StockMovementResponse]
+)
+def get_product_stock_history(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin)
+):
+    product = crud.get_product(
+        db,
+        product_id
+    )
+
+    if product is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found"
+        )
+
+    return crud.get_product_stock_movements(
         db,
         product_id
     )

@@ -11,6 +11,7 @@ from models import (
     PromoCode,
 )
 from schemas import OrderCreate, OrderStatusUpdate
+from .stock_movements import create_stock_movement
 
 
 def create_order_from_cart(
@@ -167,7 +168,13 @@ def create_order_from_cart(
 
         product.stock_quantity -= cart_item.quantity
         product.in_stock = product.stock_quantity > 0
-
+        create_stock_movement(
+            db=db,
+            product_id=product.id,
+            quantity_change=-cart_item.quantity,
+            reason="order"
+        )
+    
     for cart_item in cart_items:
         db.delete(cart_item)
 
@@ -314,9 +321,16 @@ def cancel_order(
             .first()
         )
 
-        if product is not None:
-            product.stock_quantity += order_item.quantity
-            product.in_stock = True
+    if product is not None:
+        product.stock_quantity += order_item.quantity
+        product.in_stock = True
+
+        create_stock_movement(
+            db=db,
+            product_id=product.id,
+            quantity_change=order_item.quantity,
+            reason="cancellation"
+        )
 
     order.status = "cancelled"
 

@@ -6494,3 +6494,221 @@ def test_low_stock_products_are_filtered_and_sorted(
     assert len(filtered) == 2
     assert filtered[0]["stock_quantity"] == 2
     assert filtered[1]["stock_quantity"] == 4
+
+def test_stock_movement_created_when_order_is_created(
+    admin_headers
+):
+    headers = create_test_user(
+        "stockmovementuser1",
+        "stockmovementuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Stock Movement Product 1",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    assert product_response.status_code == 201
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 3
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+
+    history_response = client.get(
+        f"/products/{product_id}/stock-movements",
+        headers=admin_headers
+    )
+
+    assert history_response.status_code == 200
+
+    history = history_response.json()
+
+    assert len(history) == 1
+    assert history[0]["product_id"] == product_id
+    assert history[0]["quantity_change"] == -3
+    assert history[0]["reason"] == "order"
+
+
+def test_stock_movement_created_when_order_is_cancelled(
+    admin_headers
+):
+    headers = create_test_user(
+        "stockmovementuser2",
+        "stockmovementuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Stock Movement Product 2",
+            "price": 1600,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 2
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+
+    order_id = order_response.json()["id"]
+
+    cancel_response = client.post(
+        f"/orders/{order_id}/cancel",
+        headers=headers
+    )
+
+    assert cancel_response.status_code == 200
+
+    history_response = client.get(
+        f"/products/{product_id}/stock-movements",
+        headers=admin_headers
+    )
+
+    assert history_response.status_code == 200
+
+    history = history_response.json()
+
+    assert len(history) == 2
+
+    assert history[0]["quantity_change"] == -2
+    assert history[0]["reason"] == "order"
+
+    assert history[1]["quantity_change"] == 2
+    assert history[1]["reason"] == "cancellation"
+
+
+def test_stock_movement_created_when_order_is_refunded(
+    admin_headers
+):
+    headers = create_test_user(
+        "stockmovementuser3",
+        "stockmovementuser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Stock Movement Product 3",
+            "price": 1700,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 4
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+
+    order_id = order_response.json()["id"]
+
+    payment_response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert payment_response.status_code == 201
+
+    refund_response = client.post(
+        f"/orders/{order_id}/refund",
+        headers=headers
+    )
+
+    assert refund_response.status_code == 200
+
+    history_response = client.get(
+        f"/products/{product_id}/stock-movements",
+        headers=admin_headers
+    )
+
+    assert history_response.status_code == 200
+
+    history = history_response.json()
+
+    assert len(history) == 2
+
+    assert history[0]["quantity_change"] == -4
+    assert history[0]["reason"] == "order"
+
+    assert history[1]["quantity_change"] == 4
+    assert history[1]["reason"] == "refund"
+
+
+def test_regular_user_cannot_view_stock_movements():
+    headers = create_test_user(
+        "stockmovementuser4",
+        "stockmovementuser4@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Stock Movement Product 4",
+            "price": 1800,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    response = client.get(
+        f"/products/{product_id}/stock-movements",
+        headers=headers
+    )
+
+    assert response.status_code == 403
