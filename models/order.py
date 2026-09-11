@@ -1,14 +1,5 @@
-from sqlalchemy import (
-    CheckConstraint,
-    Column,
-    DateTime,
-    ForeignKey,
-    Integer,
-    String,
-    func,
-)
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, CheckConstraint, func
 from sqlalchemy.orm import relationship
-
 from database import Base
 
 
@@ -32,6 +23,17 @@ class Order(Base):
         Integer,
         nullable=False
     )
+
+    promo_code = Column(
+    String(50),
+    nullable=True
+)
+
+    discount_percent = Column(
+    Integer,
+    nullable=False,
+    server_default="0"
+)
 
     status = Column(
     String(20),

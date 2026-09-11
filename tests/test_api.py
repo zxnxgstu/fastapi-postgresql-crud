@@ -1137,3 +1137,237 @@ def test_invalid_order_status_filter(auth_headers):
     )
 
     assert response.status_code == 422
+
+def test_admin_can_create_promo_code(admin_headers):
+    response = client.post(
+        "/promo-codes",
+        json={
+            "code": "SALE10",
+            "discount_percent": 10,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 201
+
+    promo_code = response.json()
+
+    assert promo_code["code"] == "SALE10"
+    assert promo_code["discount_percent"] == 10
+    assert promo_code["active"] is True
+
+
+def test_user_cannot_create_promo_code(auth_headers):
+    response = client.post(
+        "/promo-codes",
+        json={
+            "code": "USER20",
+            "discount_percent": 20,
+            "active": True
+        },
+        headers=auth_headers
+    )
+
+    assert response.status_code == 403
+
+
+def test_duplicate_promo_code(admin_headers):
+    client.post(
+        "/promo-codes",
+        json={
+            "code": "DUPLICATE15",
+            "discount_percent": 15,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    response = client.post(
+        "/promo-codes",
+        json={
+            "code": "DUPLICATE15",
+            "discount_percent": 15,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Promo code already exists"
+
+
+def test_get_active_promo_code(admin_headers):
+    client.post(
+        "/promo-codes",
+        json={
+            "code": "CHECK25",
+            "discount_percent": 25,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    response = client.get(
+        "/promo-codes/CHECK25"
+    )
+
+    assert response.status_code == 200
+
+    promo_code = response.json()
+
+    assert promo_code["code"] == "CHECK25"
+    assert promo_code["discount_percent"] == 25
+
+def test_order_applies_promo_code(admin_headers):
+    headers = create_test_user(
+        "promouser1",
+        "promouser1@example.com"
+    )
+
+    client.post(
+        "/promo-codes",
+        json={
+            "code": "ORDER10",
+            "discount_percent": 10,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Promo Product",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        "/orders",
+        json={
+            "shipping_city": "Kyiv",
+            "shipping_street": "Khreshchatyk 1",
+            "shipping_postal_code": "01001",
+            "promo_code": "ORDER10"
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 201
+
+    order = response.json()
+
+    assert order["total_price"] == 900
+    assert order["promo_code"] == "ORDER10"
+    assert order["discount_percent"] == 10
+
+
+def test_order_with_invalid_promo_code():
+    headers = create_test_user(
+        "promouser2",
+        "promouser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Invalid Promo Product",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        "/orders",
+        json={
+            "shipping_city": "Kyiv",
+            "shipping_street": "Khreshchatyk 1",
+            "shipping_postal_code": "01001",
+            "promo_code": "DOESNOTEXIST"
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid promo code"
+
+
+def test_inactive_promo_code_cannot_be_used(admin_headers):
+    headers = create_test_user(
+        "promouser3",
+        "promouser3@example.com"
+    )
+
+    client.post(
+        "/promo-codes",
+        json={
+            "code": "INACTIVE20",
+            "discount_percent": 20,
+            "active": False
+        },
+        headers=admin_headers
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Inactive Promo Product",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        "/orders",
+        json={
+            "shipping_city": "Kyiv",
+            "shipping_street": "Khreshchatyk 1",
+            "shipping_postal_code": "01001",
+            "promo_code": "INACTIVE20"
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid promo code"

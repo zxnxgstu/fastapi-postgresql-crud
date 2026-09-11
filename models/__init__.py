@@ -4,6 +4,7 @@ from .order import Order
 from .order_item import OrderItem
 from .product import Product
 from .user import User
+from .promo_code import PromoCode
 
 
 __all__ = [
@@ -13,4 +14,5 @@ __all__ = [
     "OrderItem",
     "Product",
     "User",
+    "PromoCode"
 ]

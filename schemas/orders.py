@@ -17,11 +17,14 @@ class OrderCreate(BaseModel):
     shipping_city: str
     shipping_street: str
     shipping_postal_code: str
+    promo_code: str | None = None
 
 class OrderResponse(BaseModel):
     id: int
     user_id: int
     total_price: int
+    promo_code: str | None
+    discount_percent: int
     status: str
     created_at: datetime
     shipping_city: str | None

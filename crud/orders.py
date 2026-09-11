@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
-
-from models import CartItem, Order, OrderItem
+from models import CartItem, Order, OrderItem, PromoCode
 from schemas import OrderCreate, OrderStatusUpdate
 
 
@@ -29,9 +28,31 @@ def create_order_from_cart(
         for item in cart_items
     )
 
+    promo_code = None
+    discount_percent = 0
+
+    if order_data.promo_code:
+        promo = (
+            db.query(PromoCode)
+            .filter(PromoCode.code == order_data.promo_code)
+            .first()
+        )
+
+        if promo is None or not promo.active:
+            raise ValueError("Invalid promo code")
+
+        promo_code = promo.code
+        discount_percent = promo.discount_percent
+
+        total_price = total_price - (
+            total_price * discount_percent // 100
+        )
+
     order = Order(
         user_id=user_id,
         total_price=total_price,
+        promo_code=promo_code,
+        discount_percent=discount_percent,
         shipping_city=order_data.shipping_city,
         shipping_street=order_data.shipping_street,
         shipping_postal_code=order_data.shipping_postal_code

@@ -24,11 +24,11 @@ def create_order(
             current_user.id,
             order_data
         )
-    except ValueError:
+    except ValueError as exc:
         raise HTTPException(
-            status_code=400,
-            detail="Not enough stock"
-        )
+        status_code=400,
+        detail=str(exc)
+    )
 
     if order is None:
         raise HTTPException(
