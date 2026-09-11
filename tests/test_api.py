@@ -2474,3 +2474,238 @@ def test_cancelled_order_cannot_be_paid():
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Cancelled order cannot be paid"
+
+def test_refund_paid_order_restores_stock():
+    headers = create_test_user(
+        "refunduser1",
+        "refunduser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Refund Product",
+            "price": 2000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 2
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    payment_response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert payment_response.status_code == 201
+
+    product_after_order = client.get(
+        f"/products/{product_id}"
+    ).json()
+
+    assert product_after_order["stock_quantity"] == 3
+
+    response = client.post(
+        f"/orders/{order_id}/refund",
+        headers=headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "refunded"
+    assert response.json()["amount"] == 4000
+
+    product_after_refund = client.get(
+        f"/products/{product_id}"
+    ).json()
+
+    assert product_after_refund["stock_quantity"] == 5
+    assert product_after_refund["in_stock"] is True
+
+    order_after_refund = client.get(
+        f"/orders/{order_id}",
+        headers=headers
+    )
+
+    assert order_after_refund.status_code == 200
+    assert order_after_refund.json()["status"] == "cancelled"
+
+
+def test_payment_cannot_be_refunded_twice():
+    headers = create_test_user(
+        "refunduser2",
+        "refunduser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Double Refund Product",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    first_refund = client.post(
+        f"/orders/{order_id}/refund",
+        headers=headers
+    )
+
+    assert first_refund.status_code == 200
+
+    response = client.post(
+        f"/orders/{order_id}/refund",
+        headers=headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Payment already refunded"
+
+
+def test_user_cannot_refund_another_users_order():
+    headers1 = create_test_user(
+        "refunduser3",
+        "refunduser3@example.com"
+    )
+
+    headers2 = create_test_user(
+        "refunduser4",
+        "refunduser4@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Private Refund Product",
+            "price": 1800,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers1
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers1
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers1
+    )
+
+    order_id = order_response.json()["id"]
+
+    client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers1
+    )
+
+    response = client.post(
+        f"/orders/{order_id}/refund",
+        headers=headers2
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Order not found"
+
+
+def test_paid_order_must_use_refund_instead_of_cancel():
+    headers = create_test_user(
+        "refunduser5",
+        "refunduser5@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Paid Cancel Product",
+            "price": 2500,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    response = client.post(
+        f"/orders/{order_id}/cancel",
+        headers=headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Paid order must be refunded"

@@ -252,3 +252,46 @@ def pay_order(
         db,
         order
     )
+@router.post(
+    "/orders/{order_id}/refund",
+    response_model=PaymentResponse
+)
+def refund_order(
+    order_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    order = crud.get_user_order(
+        db,
+        order_id,
+        current_user.id
+    )
+
+    if order is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Order not found"
+        )
+
+    payment = crud.get_payment_by_order(
+        db,
+        order.id
+    )
+
+    if payment is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Order has no payment"
+        )
+
+    try:
+        return crud.refund_payment(
+            db,
+            order,
+            payment
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc)
+        )

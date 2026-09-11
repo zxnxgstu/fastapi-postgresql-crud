@@ -53,7 +53,7 @@ class Payment(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "status IN ('pending', 'paid', 'failed')",
-            name="ck_payments_status"
-        ),
+        "status IN ('pending', 'paid', 'failed', 'refunded')",
+        name="ck_payments_status"
+),
     )

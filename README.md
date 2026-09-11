@@ -111,6 +111,14 @@ REST API для управления товарами, созданный на F
 - Duplicate payments are prevented
 - Cancelled and completed orders cannot be paid
 - Users cannot pay another user's order
+- Payment refunds
+- Paid orders can be refunded
+- Refunded payments are stored with refunded status
+- Refund automatically cancels the order
+- Refund restores product stock
+- Duplicate refunds are prevented
+- Paid orders cannot be cancelled without refund
+- Users cannot refund another user's order
 
 ## API endpoints
 
@@ -149,4 +157,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 77 automated API tests.
+The project currently includes 81 automated API tests.

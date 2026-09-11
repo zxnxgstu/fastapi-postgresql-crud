@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from models import Order, Payment
+from models import Order, Payment, Product
 
 
 def get_payment_by_order(
@@ -27,6 +27,42 @@ def create_payment(
     order.status = "paid"
 
     db.add(payment)
+    db.commit()
+    db.refresh(payment)
+
+    return payment
+
+def refund_payment(
+    db: Session,
+    order: Order,
+    payment: Payment
+):
+    if payment.status == "refunded":
+        raise ValueError("Payment already refunded")
+
+    if payment.status != "paid":
+        raise ValueError("Only paid payment can be refunded")
+
+    if order.status == "completed":
+        raise ValueError("Completed order cannot be refunded")
+
+    for order_item in order.items:
+        if order_item.product_id is None:
+            continue
+
+        product = (
+            db.query(Product)
+            .filter(Product.id == order_item.product_id)
+            .first()
+        )
+
+        if product is not None:
+            product.stock_quantity += order_item.quantity
+            product.in_stock = True
+
+    payment.status = "refunded"
+    order.status = "cancelled"
+
     db.commit()
     db.refresh(payment)
 

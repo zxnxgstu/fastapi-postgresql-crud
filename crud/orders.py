@@ -176,7 +176,8 @@ def cancel_order(
 ):
     if order.status == "cancelled":
         raise ValueError("Order already cancelled")
-
+    if order.status == "paid":
+        raise ValueError("Paid order must be refunded")
     if order.status == "completed":
         raise ValueError("Completed order cannot be cancelled")
 
