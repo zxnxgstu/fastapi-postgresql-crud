@@ -38,6 +38,40 @@ def create_access_token(data: dict) -> str:
         algorithm=settings.jwt_algorithm
     )
 
+def create_refresh_token(data: dict) -> str:
+    to_encode = data.copy()
+
+    expire = datetime.now(timezone.utc) + timedelta(
+        days=settings.refresh_token_expire_days
+    )
+
+    to_encode.update({
+        "exp": expire,
+        "type": "refresh"
+    })
+
+    return jwt.encode(
+        to_encode,
+        settings.jwt_secret_key,
+        algorithm=settings.jwt_algorithm
+    )
+
+
+def decode_refresh_token(token: str):
+    try:
+        payload = jwt.decode(
+            token,
+            settings.jwt_secret_key,
+            algorithms=[settings.jwt_algorithm]
+        )
+
+        if payload.get("type") != "refresh":
+            return None
+
+        return payload
+
+    except jwt.InvalidTokenError:
+        return None
 
 def decode_access_token(token: str):
     try:

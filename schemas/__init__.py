@@ -1,5 +1,11 @@
 from .products import ProductCreate, ProductResponse
-from .users import UserCreate, UserResponse, Token, UserRoleUpdate
+from .users import (
+    UserCreate,
+    UserResponse,
+    Token,
+    RefreshTokenRequest,
+    UserRoleUpdate,
+)
 from .categories import CategoryCreate, CategoryResponse
 from .cart import CartItemCreate, CartItemUpdate, CartItemResponse
 from .orders import (

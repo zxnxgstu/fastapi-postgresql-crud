@@ -260,6 +260,11 @@ REST API для управления товарами, созданный на F
 - Promo code updates via PATCH
 - Promo code discount, expiration, minimum order amount and usage limit can be updated
 - Regular users cannot access admin promo code management
+- JWT refresh token support
+- Login returns access and refresh tokens
+- Refresh endpoint issues new tokens without requiring login again
+- Access tokens cannot be used as refresh tokens
+- Invalid refresh tokens are rejected
 
 ## API endpoints
 
@@ -298,4 +303,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 190 automated API tests.
+The project currently includes 194 automated API tests.

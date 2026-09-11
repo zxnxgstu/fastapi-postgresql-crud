@@ -6,10 +6,18 @@ from auth import (
     hash_password,
     verify_password,
     create_access_token,
+    create_refresh_token,
+    decode_refresh_token,
 )
 from dependencies import get_db, get_current_user, get_current_admin
 from models import User
-from schemas import UserCreate, UserResponse, Token, UserRoleUpdate
+from schemas import (
+    UserCreate,
+    UserResponse,
+    Token,
+    RefreshTokenRequest,
+    UserRoleUpdate,
+)
 
 
 router = APIRouter(
@@ -80,14 +88,67 @@ def login(
         )
 
     access_token = create_access_token(
+    data={"sub": user.username}
+)
+
+    refresh_token = create_refresh_token(
+    data={"sub": user.username}
+)
+
+    return {
+    "access_token": access_token,
+    "refresh_token": refresh_token,
+    "token_type": "bearer"
+}
+
+@router.post("/refresh", response_model=Token)
+def refresh_access_token(
+    token_data: RefreshTokenRequest,
+    db: Session = Depends(get_db)
+):
+    payload = decode_refresh_token(
+        token_data.refresh_token
+    )
+
+    if payload is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid refresh token"
+        )
+
+    username = payload.get("sub")
+
+    if username is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid refresh token"
+        )
+
+    user = (
+        db.query(User)
+        .filter(User.username == username)
+        .first()
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid refresh token"
+        )
+
+    access_token = create_access_token(
+        data={"sub": user.username}
+    )
+
+    refresh_token = create_refresh_token(
         data={"sub": user.username}
     )
 
     return {
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer"
     }
-
 
 @router.get("/me", response_model=UserResponse)
 def get_me(
