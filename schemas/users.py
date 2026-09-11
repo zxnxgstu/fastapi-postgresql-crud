@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Literal
-
+from datetime import datetime
 
 class UserCreate(BaseModel):
     username: str = Field(min_length=3, max_length=50)
@@ -28,3 +28,11 @@ class RefreshTokenRequest(BaseModel):
 
 class UserRoleUpdate(BaseModel):
     role: Literal["user", "admin"]
+
+class RefreshSessionResponse(BaseModel):
+    id: int
+    created_at: datetime
+    expires_at: datetime
+    revoked: bool
+
+    model_config = ConfigDict(from_attributes=True)

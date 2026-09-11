@@ -58,3 +58,35 @@ def revoke_all_user_refresh_tokens(
         session.revoked = True
 
     return len(sessions)
+
+def get_user_refresh_sessions(
+    db: Session,
+    user_id: int
+):
+    return (
+        db.query(RefreshToken)
+        .filter(
+            RefreshToken.user_id == user_id,
+            RefreshToken.revoked.is_(False)
+        )
+        .order_by(
+            RefreshToken.created_at.desc(),
+            RefreshToken.id.desc()
+        )
+        .all()
+    )
+
+
+def get_user_refresh_session(
+    db: Session,
+    session_id: int,
+    user_id: int
+):
+    return (
+        db.query(RefreshToken)
+        .filter(
+            RefreshToken.id == session_id,
+            RefreshToken.user_id == user_id
+        )
+        .first()
+    )

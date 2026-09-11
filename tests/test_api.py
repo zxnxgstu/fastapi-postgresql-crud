@@ -8863,3 +8863,228 @@ def test_logout_all_requires_authentication():
     )
 
     assert response.status_code == 401
+
+def test_user_can_view_active_refresh_sessions():
+    client.post(
+        "/register",
+        json={
+            "username": "sessionuser1",
+            "email": "sessionuser1@example.com",
+            "password": "password123"
+        }
+    )
+
+    first_login = client.post(
+        "/login",
+        data={
+            "username": "sessionuser1",
+            "password": "password123"
+        }
+    )
+
+    second_login = client.post(
+        "/login",
+        data={
+            "username": "sessionuser1",
+            "password": "password123"
+        }
+    )
+
+    assert first_login.status_code == 200
+    assert second_login.status_code == 200
+
+    access_token = first_login.json()["access_token"]
+
+    response = client.get(
+        "/sessions",
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) >= 2
+    assert all(session["revoked"] is False for session in data)
+
+
+def test_user_can_revoke_single_refresh_session():
+    client.post(
+        "/register",
+        json={
+            "username": "sessionuser2",
+            "email": "sessionuser2@example.com",
+            "password": "password123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "sessionuser2",
+            "password": "password123"
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = login_response.json()["access_token"]
+    refresh_token = login_response.json()["refresh_token"]
+
+    sessions_response = client.get(
+        "/sessions",
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert sessions_response.status_code == 200
+
+    sessions = sessions_response.json()
+
+    assert len(sessions) >= 1
+
+    session_id = sessions[0]["id"]
+
+    delete_response = client.delete(
+        f"/sessions/{session_id}",
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert delete_response.status_code == 204
+
+    refresh_response = client.post(
+        "/refresh",
+        json={
+            "refresh_token": refresh_token
+        }
+    )
+
+    assert refresh_response.status_code == 401
+    assert (
+        refresh_response.json()["detail"]
+        == "Invalid refresh token"
+    )
+
+
+def test_user_cannot_revoke_another_users_session():
+    client.post(
+        "/register",
+        json={
+            "username": "sessionuser3",
+            "email": "sessionuser3@example.com",
+            "password": "password123"
+        }
+    )
+
+    client.post(
+        "/register",
+        json={
+            "username": "sessionuser4",
+            "email": "sessionuser4@example.com",
+            "password": "password123"
+        }
+    )
+
+    first_login = client.post(
+        "/login",
+        data={
+            "username": "sessionuser3",
+            "password": "password123"
+        }
+    )
+
+    second_login = client.post(
+        "/login",
+        data={
+            "username": "sessionuser4",
+            "password": "password123"
+        }
+    )
+
+    first_access_token = first_login.json()["access_token"]
+    second_access_token = second_login.json()["access_token"]
+
+    second_sessions_response = client.get(
+        "/sessions",
+        headers={
+            "Authorization": f"Bearer {second_access_token}"
+        }
+    )
+
+    assert second_sessions_response.status_code == 200
+
+    second_session_id = (
+        second_sessions_response.json()[0]["id"]
+    )
+
+    response = client.delete(
+        f"/sessions/{second_session_id}",
+        headers={
+            "Authorization": f"Bearer {first_access_token}"
+        }
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Session not found"
+
+
+def test_revoked_session_disappears_from_active_sessions():
+    client.post(
+        "/register",
+        json={
+            "username": "sessionuser5",
+            "email": "sessionuser5@example.com",
+            "password": "password123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "sessionuser5",
+            "password": "password123"
+        }
+    )
+
+    access_token = login_response.json()["access_token"]
+
+    sessions_response = client.get(
+        "/sessions",
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert sessions_response.status_code == 200
+
+    session_id = sessions_response.json()[0]["id"]
+
+    delete_response = client.delete(
+        f"/sessions/{session_id}",
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert delete_response.status_code == 204
+
+    final_sessions_response = client.get(
+        "/sessions",
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert final_sessions_response.status_code == 200
+
+    session_ids = [
+        session["id"]
+        for session in final_sessions_response.json()
+    ]
+
+    assert session_id not in session_ids

@@ -17,6 +17,7 @@ from schemas import (
     UserResponse,
     Token,
     RefreshTokenRequest,
+    RefreshSessionResponse,
     UserRoleUpdate,
 )
 
@@ -259,6 +260,52 @@ def logout_all(
     crud.revoke_all_user_refresh_tokens(
         db=db,
         user_id=current_user.id
+    )
+
+    db.commit()
+
+    return Response(status_code=204)
+
+@router.get(
+    "/sessions",
+    response_model=list[RefreshSessionResponse]
+)
+def get_sessions(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return crud.get_user_refresh_sessions(
+        db=db,
+        user_id=current_user.id
+    )
+
+
+@router.delete(
+    "/sessions/{session_id}",
+    status_code=204
+)
+def revoke_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    refresh_session = crud.get_user_refresh_session(
+        db=db,
+        session_id=session_id,
+        user_id=current_user.id
+    )
+
+    if (
+        refresh_session is None
+        or refresh_session.revoked
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found"
+        )
+
+    crud.revoke_refresh_token_session(
+        refresh_session
     )
 
     db.commit()

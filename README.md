@@ -274,6 +274,11 @@ REST API для управления товарами, созданный на F
 - All active refresh token sessions can be revoked at once
 - Logout-all only affects the authenticated user's sessions
 - Other users' refresh tokens remain valid
+- Active refresh session listing
+- Individual refresh session revocation
+- Users cannot revoke another user's sessions
+- Revoked sessions disappear from the active session list
+- Revoked refresh tokens cannot be reused
 
 ## API endpoints
 
@@ -312,4 +317,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 201 automated API tests.
+The project currently includes 205 automated API tests.
