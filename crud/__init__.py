@@ -112,6 +112,7 @@ from .admin_stats import (
 from .stock_movements import (
     create_stock_movement,
     get_product_stock_movements,
+    get_stock_movements,
 )
 
 
@@ -185,6 +186,7 @@ __all__ = [
     "get_low_stock_products"
     "create_stock_movement",
     "get_product_stock_movements",
+    "get_stock_movements",
     "restock_product",
     "adjust_product_stock"
     "get_inventory_summary",

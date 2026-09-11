@@ -7134,3 +7134,134 @@ def test_inventory_summary_counts_products_units_and_value(
         final["inventory_value"]
         == initial["inventory_value"] + expected_added_value
     )
+
+def test_admin_can_view_all_stock_movements(admin_headers):
+    response = client.get(
+        "/admin/inventory/movements",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+def test_regular_user_cannot_view_all_stock_movements():
+    headers = create_test_user(
+        "inventorymovementuser1",
+        "inventorymovementuser1@example.com"
+    )
+
+    response = client.get(
+        "/admin/inventory/movements",
+        headers=headers
+    )
+
+    assert response.status_code == 403
+
+
+def test_stock_movements_can_be_filtered_by_product_and_reason(
+    admin_headers
+):
+    headers = create_test_user(
+        "inventorymovementuser2",
+        "inventorymovementuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Inventory Movement Product",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        f"/products/{product_id}/restock",
+        json={
+            "quantity": 5
+        },
+        headers=admin_headers
+    )
+
+    client.post(
+        f"/products/{product_id}/adjust-stock",
+        json={
+            "quantity_change": -2,
+            "reason": "damaged"
+        },
+        headers=admin_headers
+    )
+
+    response = client.get(
+        (
+            "/admin/inventory/movements"
+            f"?product_id={product_id}&reason=damaged"
+        ),
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1
+    assert data[0]["product_id"] == product_id
+    assert data[0]["quantity_change"] == -2
+    assert data[0]["reason"] == "damaged"
+
+
+def test_stock_movements_support_pagination(admin_headers):
+    headers = create_test_user(
+        "inventorymovementuser3",
+        "inventorymovementuser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Inventory Pagination Product",
+            "price": 1600,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        f"/products/{product_id}/restock",
+        json={"quantity": 1},
+        headers=admin_headers
+    )
+
+    client.post(
+        f"/products/{product_id}/restock",
+        json={"quantity": 2},
+        headers=admin_headers
+    )
+
+    client.post(
+        f"/products/{product_id}/restock",
+        json={"quantity": 3},
+        headers=admin_headers
+    )
+
+    response = client.get(
+        (
+            "/admin/inventory/movements"
+            f"?product_id={product_id}&skip=1&limit=1"
+        ),
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1

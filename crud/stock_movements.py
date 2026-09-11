@@ -35,3 +35,33 @@ def get_product_stock_movements(
         )
         .all()
     )
+
+def get_stock_movements(
+    db: Session,
+    product_id: int | None = None,
+    reason: str | None = None,
+    skip: int = 0,
+    limit: int = 20
+):
+    query = db.query(StockMovement)
+
+    if product_id is not None:
+        query = query.filter(
+            StockMovement.product_id == product_id
+        )
+
+    if reason is not None:
+        query = query.filter(
+            StockMovement.reason == reason
+        )
+
+    return (
+        query
+        .order_by(
+            StockMovement.created_at.desc(),
+            StockMovement.id.desc()
+        )
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )

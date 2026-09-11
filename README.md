@@ -231,6 +231,10 @@ REST API для управления товарами, созданный на F
 - Inventory summary for admins
 - Shows total products, in-stock products, out-of-stock products, total units, and inventory value
 - Inventory value is calculated as product price × stock quantity
+- Global stock movement log for admins
+- Stock movements can be filtered by product and reason
+- Stock movement history supports pagination
+- Regular users cannot access the admin inventory movement log
 
 ## API endpoints
 
@@ -269,4 +273,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 161 automated API tests.
+The project currently includes 165 automated API tests.
