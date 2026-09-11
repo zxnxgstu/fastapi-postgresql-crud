@@ -112,3 +112,22 @@ def get_sales_by_day(
         }
         for row in rows
     ]
+
+def get_orders_by_status(db: Session):
+    rows = (
+        db.query(
+            Order.status.label("status"),
+            func.count(Order.id).label("orders"),
+        )
+        .group_by(Order.status)
+        .order_by(Order.status.asc())
+        .all()
+    )
+
+    return [
+        {
+            "status": row.status,
+            "orders": row.orders,
+        }
+        for row in rows
+    ]

@@ -17,6 +17,7 @@ from .price_history import PriceHistoryResponse
 from .notifications import PriceDropNotificationResponse
 from .payments import PaymentResponse
 from .order_status_history import OrderStatusHistoryResponse
+from .order_status_stats import OrderStatusStatsResponse
 from .addresses import (
     AddressCreate,
     AddressUpdate,
@@ -77,4 +78,5 @@ __all__ = [
     "AdminStatsResponse"
     "TopProductResponse",
     "DailySalesResponse"
+    "OrderStatusStatsResponse",
 ]

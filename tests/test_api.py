@@ -6292,3 +6292,111 @@ def test_sales_by_day_counts_completed_order(
 
     assert final_orders == initial_orders + 1
     assert final_revenue == initial_revenue + order_total
+
+def test_admin_can_view_orders_by_status(admin_headers):
+    response = client.get(
+        "/admin/stats/orders-by-status",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert isinstance(data, list)
+
+    for item in data:
+        assert "status" in item
+        assert "orders" in item
+        assert isinstance(item["orders"], int)
+
+
+def test_regular_user_cannot_view_orders_by_status():
+    headers = create_test_user(
+        "ordersbystatususer1",
+        "ordersbystatususer1@example.com"
+    )
+
+    response = client.get(
+        "/admin/stats/orders-by-status",
+        headers=headers
+    )
+
+    assert response.status_code == 403
+
+
+def test_orders_by_status_pending_count_increases(
+    admin_headers
+):
+    initial_response = client.get(
+        "/admin/stats/orders-by-status",
+        headers=admin_headers
+    )
+
+    assert initial_response.status_code == 200
+
+    initial_data = initial_response.json()
+
+    initial_pending = next(
+        (
+            item["orders"]
+            for item in initial_data
+            if item["status"] == "pending"
+        ),
+        0
+    )
+
+    headers = create_test_user(
+        "ordersbystatususer2",
+        "ordersbystatususer2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Orders By Status Product",
+            "price": 1900,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    assert product_response.status_code == 201
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+    assert order_response.json()["status"] == "pending"
+
+    final_response = client.get(
+        "/admin/stats/orders-by-status",
+        headers=admin_headers
+    )
+
+    assert final_response.status_code == 200
+
+    final_data = final_response.json()
+
+    final_pending = next(
+        item["orders"]
+        for item in final_data
+        if item["status"] == "pending"
+    )
+
+    assert final_pending == initial_pending + 1

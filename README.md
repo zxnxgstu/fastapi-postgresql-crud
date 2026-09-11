@@ -209,6 +209,9 @@ REST API для управления товарами, созданный на F
 - Completed orders are grouped by delivery date
 - Revenue and order count are calculated per day
 - The number of days can be controlled with the days query parameter
+- Order status statistics for admins
+- Orders are grouped by status
+- Admins can view the number of pending, paid, shipped, completed, and cancelled orders
 
 ## API endpoints
 
@@ -247,4 +250,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 140 automated API tests.
+The project currently includes 143 automated API tests.

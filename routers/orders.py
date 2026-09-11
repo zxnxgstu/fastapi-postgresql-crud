@@ -17,6 +17,7 @@ from schemas import (
     AdminStatsResponse,
     TopProductResponse,
     DailySalesResponse,
+    OrderStatusStatsResponse,
 )
 from dependencies import (
     get_current_admin,
@@ -537,3 +538,13 @@ def get_admin_sales_by_day(
         db=db,
         days=days
     )
+
+@router.get(
+    "/admin/stats/orders-by-status",
+    response_model=list[OrderStatusStatsResponse]
+)
+def get_admin_orders_by_status(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin)
+):
+    return crud.get_orders_by_status(db)
