@@ -11299,3 +11299,23 @@ def test_username_with_only_spaces_is_rejected():
     )
 
     assert response.status_code == 422
+
+def test_health_endpoint():
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ok",
+        "database": "ok"
+    }
+
+
+def test_openapi_metadata():
+    response = client.get("/openapi.json")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["info"]["title"] == "E-Commerce REST API"
+    assert data["info"]["version"] == "1.0.0"

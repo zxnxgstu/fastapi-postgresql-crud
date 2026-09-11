@@ -15,9 +15,15 @@ from routers.inventory import router as inventory_router
 from routers.admin_products import router as admin_products_router
 from routers.admin_promo_codes import router as admin_promo_codes_router
 from routers.admin_audit_logs import router as admin_audit_logs_router
+from routers.health import router as health_router
 
 app = FastAPI(
-    title="FastAPI PostgreSQL CRUD API"
+    title="E-Commerce REST API",
+    description=(
+        "Backend API for an e-commerce platform built with "
+        "FastAPI, PostgreSQL, SQLAlchemy and JWT authentication."
+    ),
+    version="1.0.0"
 )
 
 app.include_router(products_router)
@@ -35,6 +41,7 @@ app.include_router(inventory_router)
 app.include_router(admin_products_router)
 app.include_router(admin_promo_codes_router)
 app.include_router(admin_audit_logs_router)
+app.include_router(health_router)
 
 @app.get("/")
 def home():

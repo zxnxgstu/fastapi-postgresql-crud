@@ -326,6 +326,9 @@ REST API для управления товарами, созданный на F
 - Username whitespace normalization during registration
 - Username whitespace normalization during profile updates
 - Usernames containing only whitespace are rejected
+- Health check endpoint with database connectivity validation
+- OpenAPI metadata for project title and API version
+- Interactive Swagger documentation
 
 ## API endpoints
 
@@ -365,4 +368,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 248 automated API tests.
+The project currently includes 250 automated API tests.
