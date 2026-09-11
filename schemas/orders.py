@@ -9,6 +9,7 @@ class OrderItemResponse(BaseModel):
     product_name: str
     price: int
     quantity: int
+    line_total: int
 
     model_config = ConfigDict(from_attributes=True)
 

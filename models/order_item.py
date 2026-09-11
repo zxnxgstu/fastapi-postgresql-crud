@@ -49,3 +49,9 @@ class OrderItem(Base):
         "Order",
         back_populates="items"
     )
+    line_total = Column(
+    Integer,
+    nullable=False,
+    default=0,
+    server_default="0"
+)

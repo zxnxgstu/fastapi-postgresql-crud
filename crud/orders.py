@@ -158,7 +158,8 @@ def create_order_from_cart(
             product_id=product.id,
             product_name=product.name,
             price=product.price,
-            quantity=cart_item.quantity
+            quantity=cart_item.quantity,
+            line_total=product.price * cart_item.quantity
         )
 
         db.add(order_item)

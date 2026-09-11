@@ -4398,3 +4398,49 @@ def test_payment_uses_final_order_total(admin_headers):
 
     assert payment_response.status_code == 201
     assert payment_response.json()["amount"] == 2100
+
+def test_order_item_line_total():
+    headers = create_test_user(
+        "linetotaluser1",
+        "linetotaluser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Line Total Product",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 3
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    assert response.status_code == 201
+
+    order = response.json()
+
+    assert len(order["items"]) == 1
+
+    item = order["items"][0]
+
+    assert item["price"] == 1500
+    assert item["quantity"] == 3
+    assert item["line_total"] == 4500
