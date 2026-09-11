@@ -792,14 +792,23 @@ def test_admin_can_update_order_status(admin_headers):
 
     order_id = order_response.json()["id"]
 
+    payment_response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert payment_response.status_code == 201
+
     response = client.patch(
         f"/admin/orders/{order_id}/status",
-        json={"status": "paid"},
+        json={
+            "status": "shipped"
+        },
         headers=admin_headers
     )
 
     assert response.status_code == 200
-    assert response.json()["status"] == "paid"
+    assert response.json()["status"] == "shipped"
 
 
 def test_invalid_order_status(admin_headers):
@@ -1054,7 +1063,7 @@ def test_filter_my_orders_by_status(admin_headers):
 
     product_id = product_response.json()["id"]
 
-    # Первый заказ — оставляем pending
+    # Первый заказ оставляем pending
     client.post(
         "/cart",
         json={
@@ -1070,7 +1079,9 @@ def test_filter_my_orders_by_status(admin_headers):
         headers=headers
     )
 
-    # Второй заказ
+    assert pending_order.status_code == 201
+
+    # Второй заказ доводим до completed
     client.post(
         "/cart",
         json={
@@ -1086,15 +1097,36 @@ def test_filter_my_orders_by_status(admin_headers):
         headers=headers
     )
 
+    assert completed_order.status_code == 201
+
     completed_order_id = completed_order.json()["id"]
 
-    client.patch(
+    payment_response = client.post(
+        f"/orders/{completed_order_id}/pay",
+        headers=headers
+    )
+
+    assert payment_response.status_code == 201
+
+    shipped_response = client.patch(
+        f"/admin/orders/{completed_order_id}/status",
+        json={
+            "status": "shipped"
+        },
+        headers=admin_headers
+    )
+
+    assert shipped_response.status_code == 200
+
+    completed_response = client.patch(
         f"/admin/orders/{completed_order_id}/status",
         json={
             "status": "completed"
         },
         headers=admin_headers
     )
+
+    assert completed_response.status_code == 200
 
     response = client.get(
         "/orders",
@@ -1516,13 +1548,32 @@ def test_user_cannot_cancel_completed_order(admin_headers):
 
     order_id = order_response.json()["id"]
 
-    client.patch(
+    payment_response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert payment_response.status_code == 201
+
+    shipped_response = client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "shipped"
+        },
+        headers=admin_headers
+    )
+
+    assert shipped_response.status_code == 200
+
+    completed_response = client.patch(
         f"/admin/orders/{order_id}/status",
         json={
             "status": "completed"
         },
         headers=admin_headers
     )
+
+    assert completed_response.status_code == 200
 
     response = client.post(
         f"/orders/{order_id}/cancel",
@@ -2709,3 +2760,182 @@ def test_paid_order_must_use_refund_instead_of_cancel():
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Paid order must be refunded"
+
+def test_cannot_change_pending_order_directly_to_completed(admin_headers):
+    headers = create_test_user(
+        "workflowuser1",
+        "workflowuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Workflow Product 1",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    response = client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "completed"
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "Cannot change order status from pending to completed"
+    )
+
+
+def test_cannot_change_pending_order_directly_to_shipped(admin_headers):
+    headers = create_test_user(
+        "workflowuser2",
+        "workflowuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Workflow Product 2",
+            "price": 1200,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    response = client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "shipped"
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "Cannot change order status from pending to shipped"
+    )
+
+
+def test_completed_order_status_cannot_be_changed(admin_headers):
+    headers = create_test_user(
+        "workflowuser3",
+        "workflowuser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Workflow Product 3",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    payment_response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert payment_response.status_code == 201
+
+    shipped_response = client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "shipped"
+        },
+        headers=admin_headers
+    )
+
+    assert shipped_response.status_code == 200
+
+    completed_response = client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "completed"
+        },
+        headers=admin_headers
+    )
+
+    assert completed_response.status_code == 200
+
+    response = client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "shipped"
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "Cannot change order status from completed to shipped"
+    )

@@ -163,12 +163,32 @@ def update_order_status(
     order: Order,
     status_data: OrderStatusUpdate
 ):
-    order.status = status_data.status
+    allowed_transitions = {
+        "pending": set(),
+        "paid": {"shipped"},
+        "shipped": {"completed"},
+        "completed": set(),
+        "cancelled": set(),
+    }
+
+    new_status = status_data.status
+
+    if new_status not in allowed_transitions.get(
+        order.status,
+        set()
+    ):
+        raise ValueError(
+            f"Cannot change order status from "
+            f"{order.status} to {new_status}"
+        )
+
+    order.status = new_status
 
     db.commit()
     db.refresh(order)
 
     return order
+
 
 def cancel_order(
     db: Session,
@@ -176,10 +196,14 @@ def cancel_order(
 ):
     if order.status == "cancelled":
         raise ValueError("Order already cancelled")
+
     if order.status == "paid":
         raise ValueError("Paid order must be refunded")
+
     if order.status == "completed":
-        raise ValueError("Completed order cannot be cancelled")
+        raise ValueError(
+            "Completed order cannot be cancelled"
+        )
 
     for order_item in order.items:
         if order_item.product_id is None:
@@ -187,7 +211,9 @@ def cancel_order(
 
         product = (
             db.query(Product)
-            .filter(Product.id == order_item.product_id)
+            .filter(
+                Product.id == order_item.product_id
+            )
             .first()
         )
 

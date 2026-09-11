@@ -119,6 +119,12 @@ REST API для управления товарами, созданный на F
 - Duplicate refunds are prevented
 - Paid orders cannot be cancelled without refund
 - Users cannot refund another user's order
+- Order status workflow
+- Valid order status transitions are enforced
+- Orders must be paid before they can be shipped
+- Shipped orders can be completed
+- Invalid status transitions return 400 Bad Request
+- Completed and cancelled orders cannot be moved back to previous states
 
 ## API endpoints
 
@@ -157,4 +163,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 81 automated API tests.
+The project currently includes 84 automated API tests.

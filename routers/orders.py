@@ -135,10 +135,16 @@ def update_order_status(
         status_code=400,
         detail="Use cancel endpoint to cancel orders"
     )
-    return crud.update_order_status(
+    try:
+        return crud.update_order_status(
         db,
         order,
         status_data
+    )
+    except ValueError as exc:
+        raise HTTPException(
+        status_code=400,
+        detail=str(exc)
     )
 
 @router.post(
