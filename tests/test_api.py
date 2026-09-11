@@ -927,3 +927,110 @@ def test_order_requires_full_shipping_address(auth_headers):
     )
 
     assert response.status_code == 422
+
+def test_sort_products_by_price_desc(auth_headers):
+    client.post(
+        "/products",
+        json={
+            "name": "SortingTest Cheap",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=auth_headers
+    )
+
+    client.post(
+        "/products",
+        json={
+            "name": "SortingTest Expensive",
+            "price": 3000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=auth_headers
+    )
+
+    response = client.get(
+        "/products",
+        params={
+            "search": "SortingTest",
+            "sort_by": "price",
+            "order": "desc"
+        }
+    )
+
+    assert response.status_code == 200
+
+    products = response.json()
+
+    assert products[0]["price"] == 3000
+    assert products[1]["price"] == 1000
+
+
+def test_products_pagination(auth_headers):
+    for name in [
+        "PaginationTest A",
+        "PaginationTest B",
+        "PaginationTest C"
+    ]:
+        client.post(
+            "/products",
+            json={
+                "name": name,
+                "price": 1000,
+                "in_stock": True,
+                "stock_quantity": 10
+            },
+            headers=auth_headers
+        )
+
+    response = client.get(
+        "/products",
+        params={
+            "search": "PaginationTest",
+            "sort_by": "id",
+            "order": "asc",
+            "skip": 1,
+            "limit": 1
+        }
+    )
+
+    assert response.status_code == 200
+
+    products = response.json()
+
+    assert len(products) == 1
+    assert products[0]["name"] == "PaginationTest B"
+
+
+def test_invalid_product_sorting():
+    response = client.get(
+        "/products",
+        params={
+            "sort_by": "banana"
+        }
+    )
+
+    assert response.status_code == 422
+
+def test_products_invalid_negative_skip():
+    response = client.get(
+        "/products",
+        params={
+            "skip": -1
+        }
+    )
+
+    assert response.status_code == 422
+
+
+def test_products_invalid_limit():
+    response = client.get(
+        "/products",
+        params={
+            "limit": 101
+        }
+    )
+
+    assert response.status_code == 422

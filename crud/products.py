@@ -10,18 +10,43 @@ def get_products(
     in_stock: bool | None = None,
     category_id: int | None = None,
     skip: int = 0,
-    limit: int = 10
+    limit: int = 10,
+    sort_by: str = "id",
+    order: str = "asc"
 ):
     query = db.query(Product)
 
     if search:
-        query = query.filter(Product.name.ilike(f"%{search}%"))
+        query = query.filter(
+            Product.name.ilike(f"%{search}%")
+        )
 
     if in_stock is not None:
-        query = query.filter(Product.in_stock == in_stock)
+        query = query.filter(
+            Product.in_stock == in_stock
+        )
 
     if category_id is not None:
-        query = query.filter(Product.category_id == category_id)
+        query = query.filter(
+            Product.category_id == category_id
+        )
+
+    sort_columns = {
+        "id": Product.id,
+        "name": Product.name,
+        "price": Product.price,
+        "stock_quantity": Product.stock_quantity
+    }
+
+    sort_column = sort_columns.get(
+        sort_by,
+        Product.id
+    )
+
+    if order == "desc":
+        query = query.order_by(sort_column.desc())
+    else:
+        query = query.order_by(sort_column.asc())
 
     return query.offset(skip).limit(limit).all()
 

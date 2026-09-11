@@ -61,6 +61,14 @@ REST API для управления товарами, созданный на F
 - Stock validation when adding products to cart
 - Automatic stock reduction after order creation
 - Automatic out-of-stock status when quantity reaches zero
+- Shipping address for orders
+- Shipping city, street and postal code stored with each order
+- Shipping address validation during checkout
+- Product search by name
+- Product filtering by category and stock status
+- Product sorting by id, name, price and stock quantity
+- Pagination with skip and limit
+- Query parameter validation
 
 ## API endpoints
 
@@ -99,4 +107,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 37 automated API tests.
+The project currently includes 43 automated API tests.

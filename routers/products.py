@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, Query
 from sqlalchemy.orm import Session
-
+from typing import Literal
 import crud
 from dependencies import get_db, get_current_user, get_current_admin
 from models import User
@@ -18,8 +18,10 @@ def get_products(
     search: str | None = None,
     in_stock: bool | None = None,
     category_id: int | None = None,
-    skip: int = 0,
-    limit: int = 10,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=10, ge=1, le=100),
+    sort_by: Literal["id", "name", "price", "stock_quantity"] = "id",
+    order: Literal["asc", "desc"] = "asc",
     db: Session = Depends(get_db)
 ):
     return crud.get_products(
@@ -28,9 +30,10 @@ def get_products(
         in_stock=in_stock,
         category_id=category_id,
         skip=skip,
-        limit=limit
+        limit=limit,
+        sort_by=sort_by,
+        order=order
     )
-
 
 @router.get("/{product_id}", response_model=ProductResponse)
 def get_product(
