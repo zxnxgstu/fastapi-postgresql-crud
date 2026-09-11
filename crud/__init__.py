@@ -13,6 +13,14 @@ from .categories import (
     create_category,
 )
 
+from .cart import (
+    get_cart,
+    get_cart_item,
+    add_cart_item,
+    update_cart_item,
+    delete_cart_item,
+)
+
 __all__ = [
     "get_products",
     "get_product",
@@ -23,4 +31,9 @@ __all__ = [
     "get_category",
     "get_category_by_name",
     "create_category",
+    "get_cart",
+    "get_cart_item",
+    "add_cart_item",
+    "update_cart_item",
+    "delete_cart_item",
 ]

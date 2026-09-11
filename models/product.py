@@ -23,3 +23,8 @@ class Product(Base):
         "Category",
         back_populates="products"
     )
+    cart_items = relationship(
+        "CartItem",
+        back_populates="product",
+        cascade="all, delete-orphan"
+    )

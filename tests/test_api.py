@@ -299,3 +299,241 @@ def test_filter_products_by_category(auth_headers, admin_headers):
         product["category_id"] == category_id
         for product in products
     )
+
+def test_get_empty_cart(auth_headers):
+    response = client.get(
+        "/cart",
+        headers=auth_headers
+    )
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_add_product_to_cart(auth_headers):
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Cart Product",
+            "price": 1500,
+            "in_stock": True
+        },
+        headers=auth_headers
+    )
+
+    assert product_response.status_code == 201
+
+    product_id = product_response.json()["id"]
+
+    response = client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 2
+        },
+        headers=auth_headers
+    )
+
+    assert response.status_code == 201
+    assert response.json()["product_id"] == product_id
+    assert response.json()["quantity"] == 2
+
+
+def test_add_same_product_increases_quantity(auth_headers):
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Repeated Cart Product",
+            "price": 2000,
+            "in_stock": True
+        },
+        headers=auth_headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    first_response = client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=auth_headers
+    )
+
+    assert first_response.status_code == 201
+
+    second_response = client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 2
+        },
+        headers=auth_headers
+    )
+
+    assert second_response.status_code == 201
+    assert second_response.json()["quantity"] == 3
+
+    cart_response = client.get(
+        "/cart",
+        headers=auth_headers
+    )
+
+    cart_items = cart_response.json()
+
+    matching_items = [
+        item for item in cart_items
+        if item["product_id"] == product_id
+    ]
+
+    assert len(matching_items) == 1
+    assert matching_items[0]["quantity"] == 3
+
+def test_update_cart_item(auth_headers):
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Update Cart Product",
+            "price": 2500,
+            "in_stock": True
+        },
+        headers=auth_headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    cart_response = client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=auth_headers
+    )
+
+    item_id = cart_response.json()["id"]
+
+    response = client.patch(
+        f"/cart/{item_id}",
+        json={"quantity": 5},
+        headers=auth_headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["quantity"] == 5
+
+
+def test_delete_cart_item(auth_headers):
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Delete Cart Product",
+            "price": 3000,
+            "in_stock": True
+        },
+        headers=auth_headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    cart_response = client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=auth_headers
+    )
+
+    item_id = cart_response.json()["id"]
+
+    delete_response = client.delete(
+        f"/cart/{item_id}",
+        headers=auth_headers
+    )
+
+    assert delete_response.status_code == 204
+
+    cart_response = client.get(
+        "/cart",
+        headers=auth_headers
+    )
+
+    assert cart_response.status_code == 200
+    remaining_items = cart_response.json()
+
+    assert all(
+        item["id"] != item_id
+        for item in remaining_items
+    )
+
+
+def test_add_missing_product_to_cart(auth_headers):
+    response = client.post(
+        "/cart",
+        json={
+            "product_id": 999999,
+            "quantity": 1
+        },
+        headers=auth_headers
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Product not found"
+
+def test_user_cannot_modify_another_users_cart(auth_headers):
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Private Cart Product",
+            "price": 1800,
+            "in_stock": True
+        },
+        headers=auth_headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    cart_response = client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=auth_headers
+    )
+
+    item_id = cart_response.json()["id"]
+
+    client.post(
+        "/register",
+        json={
+            "username": "seconduser",
+            "email": "seconduser@example.com",
+            "password": "password123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "seconduser",
+            "password": "password123"
+        }
+    )
+
+    second_token = login_response.json()["access_token"]
+
+    second_user_headers = {
+        "Authorization": f"Bearer {second_token}"
+    }
+
+    response = client.patch(
+        f"/cart/{item_id}",
+        json={"quantity": 10},
+        headers=second_user_headers
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Cart item not found"

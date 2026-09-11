@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String
-
+from sqlalchemy.orm import relationship
 from database import Base
 
 
@@ -22,3 +22,9 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
 
     role = Column(String(20), nullable=False, server_default="user")
+
+    cart_items = relationship(
+        "CartItem",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )

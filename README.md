@@ -46,6 +46,11 @@ REST API для управления товарами, созданный на F
 - Products can be assigned to categories
 - Product filtering by category
 - Admin-only category creation
+- Shopping cart
+- Add products to cart
+- Update cart item quantity
+- Remove products from cart
+- User-specific cart isolation
 
 ## API endpoints
 
@@ -64,6 +69,10 @@ REST API для управления товарами, созданный на F
 | GET | `/categories` | Get all categories | No |
 | GET | `/categories/{category_id}` | Get category by ID | No |
 | POST | `/categories` | Create category | Admin |
+| GET | `/cart` | Get current user's cart | Yes |
+| POST | `/cart` | Add product to cart | Yes |
+| PATCH | `/cart/{item_id}` | Update cart item quantity | Yes |
+| DELETE | `/cart/{item_id}` | Remove item from cart | Yes |
 
 ## Product filtering and pagination
 
@@ -71,3 +80,8 @@ Products can be filtered by name, stock status and category:
 
 ```text
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
+```text
+GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
+```
+
+The project currently includes 26 automated API tests.
