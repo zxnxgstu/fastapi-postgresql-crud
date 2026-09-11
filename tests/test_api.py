@@ -5428,10 +5428,14 @@ def test_delivered_shipment_event_completes_order(
     order_response = client.get(
         f"/orders/{order_id}",
         headers=headers
-    )
+)
 
     assert order_response.status_code == 200
-    assert order_response.json()["status"] == "completed"
+
+    order = order_response.json()
+
+    assert order["status"] == "completed"
+    assert order["delivered_at"] is not None
 
     history_response = client.get(
         f"/orders/{order_id}/status-history",

@@ -68,6 +68,7 @@ class OrderResponse(BaseModel):
     shipping_carrier: str | None
     tracking_number: str | None
     estimated_delivery_date: date | None
+    delivered_at: datetime | None
 
 
 class OrderStatusUpdate(BaseModel):

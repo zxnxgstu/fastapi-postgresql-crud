@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-
+from datetime import datetime, timezone
 from models import Order, ShipmentEvent
 from schemas import ShipmentEventCreate
 
@@ -74,6 +74,7 @@ def create_shipment_event(
     if event_data.status == "delivered":
         old_status = order.status
         order.status = "completed"
+        order.delivered_at = datetime.now(timezone.utc)
 
         create_order_status_history(
             db=db,

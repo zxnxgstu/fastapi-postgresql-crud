@@ -195,6 +195,9 @@ REST API для управления товарами, созданный на F
 - Shipment events follow a strict status sequence
 - Valid sequence: picked_up -> in_transit -> out_for_delivery -> delivered
 - Skipping statuses or moving backwards is rejected
+- Actual delivery timestamp
+- delivered_at is stored when a delivered shipment event is created
+- delivered_at is returned with order data
 
 ## API endpoints
 

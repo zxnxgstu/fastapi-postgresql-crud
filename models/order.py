@@ -160,6 +160,10 @@ class Order(Base):
     Date,
     nullable=True
 )
+    delivered_at = Column(
+    DateTime(timezone=True),
+    nullable=True
+)
     shipment_events = relationship(
     "ShipmentEvent",
     back_populates="order",
