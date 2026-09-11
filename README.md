@@ -53,14 +53,7 @@ REST API для управления товарами, созданный на F
 | GET | `/products/{product_id}` | Get product by ID | No |
 | POST | `/products` | Create product | Yes |
 | PUT | `/products/{product_id}` | Update product | Yes |
-| DELETE | `/products/{product_id}` | Delete product | Yes |
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/products` | Get products |
-| GET | `/products/{product_id}` | Get product by ID |
-| POST | `/products` | Create product |
-| PUT | `/products/{product_id}` | Update product |
-| DELETE | `/products/{product_id}` | Delete product |
+| DELETE | `/products/{product_id}` | Delete product | Admin |
 
 ## Search and pagination
 
