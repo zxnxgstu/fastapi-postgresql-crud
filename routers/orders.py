@@ -105,7 +105,10 @@ def get_my_order(
     return order
 
 
-@router.get("/admin/orders", response_model=list[OrderResponse])
+@router.get(
+    "/admin/orders",
+    response_model=list[OrderResponse]
+)
 def get_all_orders(
     status: Literal[
         "pending",
@@ -114,14 +117,30 @@ def get_all_orders(
         "completed",
         "cancelled"
     ] | None = None,
+    user_id: int | None = Query(default=None, ge=1),
+    min_total: int | None = Query(default=None, ge=0),
+    max_total: int | None = Query(default=None, ge=0),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=10, ge=1, le=100),
     db: Session = Depends(get_db),
     current_admin: User = Depends(get_current_admin)
 ):
+    if (
+        min_total is not None
+        and max_total is not None
+        and min_total > max_total
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="min_total cannot be greater than max_total"
+        )
+
     return crud.get_all_orders(
-        db,
+        db=db,
         status=status,
+        user_id=user_id,
+        min_total=min_total,
+        max_total=max_total,
         skip=skip,
         limit=limit
     )

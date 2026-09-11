@@ -255,10 +255,12 @@ def get_order(
         .first()
     )
 
-
 def get_all_orders(
     db: Session,
     status: str | None = None,
+    user_id: int | None = None,
+    min_total: int | None = None,
+    max_total: int | None = None,
     skip: int = 0,
     limit: int = 10
 ):
@@ -269,14 +271,31 @@ def get_all_orders(
             Order.status == status
         )
 
+    if user_id is not None:
+        query = query.filter(
+            Order.user_id == user_id
+        )
+
+    if min_total is not None:
+        query = query.filter(
+            Order.total_price >= min_total
+        )
+
+    if max_total is not None:
+        query = query.filter(
+            Order.total_price <= max_total
+        )
+
     return (
         query
-        .order_by(Order.created_at.desc())
+        .order_by(
+            Order.created_at.desc(),
+            Order.id.desc()
+        )
         .offset(skip)
         .limit(limit)
         .all()
     )
-
 
 def update_order_status(
     db: Session,

@@ -245,6 +245,11 @@ REST API для управления товарами, созданный на F
 - Promo code usage limits
 - Promo code usage counter
 - Unlimited promo codes remain supported
+- Admin order filtering by status
+- Admin order filtering by user
+- Admin order filtering by minimum and maximum total
+- Combined admin order filters
+- Admin order pagination
 
 ## API endpoints
 
@@ -283,4 +288,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 175 automated API tests.
+The project currently includes 180 automated API tests.

@@ -7783,3 +7783,251 @@ def test_promo_code_without_restrictions_still_works(admin_headers):
     assert order["discount_amount"] == 500
     assert order["total_price"] == 4500
     assert order["promo_code"] == "UNLIMITEDPROMO10"
+
+def test_admin_orders_can_be_filtered_by_user_id(admin_headers):
+    headers = create_test_user(
+        "adminorderfilter1",
+        "adminorderfilter1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Admin Order Filter Product 1",
+            "price": 3210,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+
+    order = order_response.json()
+    user_id = order["user_id"]
+    order_id = order["id"]
+
+    response = client.get(
+        f"/admin/orders?user_id={user_id}",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert any(item["id"] == order_id for item in data)
+    assert all(item["user_id"] == user_id for item in data)
+
+
+def test_admin_orders_can_be_filtered_by_total_range(admin_headers):
+    headers = create_test_user(
+        "adminorderfilter2",
+        "adminorderfilter2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Admin Order Filter Product 2",
+            "price": 4321,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+
+    order_id = order_response.json()["id"]
+
+    response = client.get(
+        "/admin/orders?min_total=4300&max_total=4350",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert any(item["id"] == order_id for item in data)
+
+    assert all(
+        4300 <= item["total_price"] <= 4350
+        for item in data
+    )
+
+
+def test_admin_orders_support_combined_filters(admin_headers):
+    headers = create_test_user(
+        "adminorderfilter3",
+        "adminorderfilter3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Admin Combined Filter Product",
+            "price": 5432,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+
+    order = order_response.json()
+    user_id = order["user_id"]
+    order_id = order["id"]
+
+    response = client.get(
+        (
+            "/admin/orders"
+            f"?user_id={user_id}"
+            "&status=pending"
+            "&min_total=5400"
+            "&max_total=5500"
+        ),
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert any(item["id"] == order_id for item in data)
+
+    assert all(
+        item["user_id"] == user_id
+        and item["status"] == "pending"
+        and 5400 <= item["total_price"] <= 5500
+        for item in data
+    )
+
+
+def test_admin_orders_support_pagination(admin_headers):
+    headers = create_test_user(
+        "adminorderfilter4",
+        "adminorderfilter4@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Admin Pagination Product",
+            "price": 6543,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    for _ in range(3):
+        client.post(
+            "/cart",
+            json={
+                "product_id": product_id,
+                "quantity": 1
+            },
+            headers=headers
+        )
+
+        order_response = client.post(
+            "/orders",
+            json=SHIPPING_DATA,
+            headers=headers
+        )
+
+        assert order_response.status_code == 201
+
+    last_order = order_response.json()
+    user_id = last_order["user_id"]
+
+    full_response = client.get(
+        f"/admin/orders?user_id={user_id}&limit=10",
+        headers=admin_headers
+    )
+
+    assert full_response.status_code == 200
+
+    full_data = full_response.json()
+
+    paged_response = client.get(
+        f"/admin/orders?user_id={user_id}&skip=1&limit=1",
+        headers=admin_headers
+    )
+
+    assert paged_response.status_code == 200
+
+    paged_data = paged_response.json()
+
+    assert len(full_data) == 3
+    assert len(paged_data) == 1
+    assert paged_data[0]["id"] == full_data[1]["id"]
+
+
+def test_admin_orders_reject_invalid_total_range(admin_headers):
+    response = client.get(
+        "/admin/orders?min_total=5000&max_total=1000",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "min_total cannot be greater than max_total"
+    )
