@@ -320,6 +320,9 @@ REST API для управления товарами, созданный на F
 - Audit logging for user profile updates
 - Profile audit logs include changed fields
 - Empty profile updates do not create audit log entries
+- Email normalization to lowercase during registration
+- Email normalization during profile updates
+- Case-insensitive duplicate email protection
 
 ## API endpoints
 
@@ -358,4 +361,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 242 automated API tests.
+The project currently includes 245 automated API tests.

@@ -11108,3 +11108,107 @@ def test_empty_profile_update_does_not_create_audit_log(
 
     assert audit_response.status_code == 200
     assert audit_response.json() == []
+
+def test_registration_normalizes_email_to_lowercase():
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    username = f"emailnormreg_{suffix}"
+    raw_email = f"EmailNormREG_{suffix}@Example.COM"
+    expected_email = raw_email.lower()
+
+    register_response = client.post(
+        "/register",
+        json={
+            "username": username,
+            "email": raw_email,
+            "password": "password123"
+        }
+    )
+
+    assert register_response.status_code == 201
+    assert register_response.json()["email"] == expected_email
+
+
+def test_profile_update_normalizes_email_to_lowercase():
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    username = f"emailnormprofile_{suffix}"
+    email = f"emailnormprofile_{suffix}@example.com"
+    password = "password123"
+
+    register_response = client.post(
+        "/register",
+        json={
+            "username": username,
+            "email": email,
+            "password": password
+        }
+    )
+
+    assert register_response.status_code == 201
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": username,
+            "password": password
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = login_response.json()["access_token"]
+
+    raw_new_email = f"UpdatedEmail_{suffix}@Example.COM"
+    expected_email = raw_new_email.lower()
+
+    update_response = client.patch(
+        "/me",
+        json={
+            "email": raw_new_email
+        },
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert update_response.status_code == 200
+    assert update_response.json()["email"] == expected_email
+
+
+def test_email_duplicate_check_is_case_insensitive():
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    first_username = f"emailcasefirst_{suffix}"
+    second_username = f"emailcasesecond_{suffix}"
+
+    first_email = f"CaseEmail_{suffix}@Example.COM"
+    second_email = first_email.lower()
+
+    first_register = client.post(
+        "/register",
+        json={
+            "username": first_username,
+            "email": first_email,
+            "password": "password123"
+        }
+    )
+
+    assert first_register.status_code == 201
+
+    second_register = client.post(
+        "/register",
+        json={
+            "username": second_username,
+            "email": second_email,
+            "password": "password123"
+        }
+    )
+
+    assert second_register.status_code in (400, 409)

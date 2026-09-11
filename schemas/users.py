@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Literal
 from datetime import datetime
 
@@ -6,6 +6,10 @@ class UserCreate(BaseModel):
     username: str = Field(min_length=3, max_length=50)
     email: str = Field(min_length=5, max_length=255)
     password: str = Field(min_length=8, max_length=128)
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str):
+        return value.strip().lower()
 
 class UserPasswordChange(BaseModel):
     current_password: str = Field(
@@ -56,6 +60,13 @@ class UserProfileUpdate(BaseModel):
         min_length=3,
         max_length=50
     )
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str | None):
+        if value is None:
+            return None
+
+        return value.strip().lower()
 
     email: str | None = Field(
         default=None,
