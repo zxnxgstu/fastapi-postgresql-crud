@@ -125,6 +125,14 @@ REST API для управления товарами, созданный на F
 - Shipped orders can be completed
 - Invalid status transitions return 400 Bad Request
 - Completed and cancelled orders cannot be moved back to previous states
+- Order status history
+- Every order status change is stored in the database
+- Initial pending status is recorded when an order is created
+- Payment records pending -> paid
+- Admin status changes record paid -> shipped -> completed
+- Order cancellation records -> cancelled
+- Payment refund records paid -> cancelled
+- Users can view status history only for their own orders
 
 ## API endpoints
 
@@ -163,4 +171,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 84 automated API tests.
+The project currently includes 88 automated API tests.

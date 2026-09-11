@@ -2939,3 +2939,279 @@ def test_completed_order_status_cannot_be_changed(admin_headers):
         response.json()["detail"]
         == "Cannot change order status from completed to shipped"
     )
+
+def test_order_status_history_tracks_full_workflow(admin_headers):
+    headers = create_test_user(
+        "historyuser1",
+        "historyuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Status History Product",
+            "price": 2000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+
+    order_id = order_response.json()["id"]
+
+    payment_response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert payment_response.status_code == 201
+
+    shipped_response = client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "shipped"
+        },
+        headers=admin_headers
+    )
+
+    assert shipped_response.status_code == 200
+
+    completed_response = client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "completed"
+        },
+        headers=admin_headers
+    )
+
+    assert completed_response.status_code == 200
+
+    response = client.get(
+        f"/orders/{order_id}/status-history",
+        headers=headers
+    )
+
+    assert response.status_code == 200
+
+    history = response.json()
+
+    assert len(history) == 4
+
+    assert history[0]["old_status"] is None
+    assert history[0]["new_status"] == "pending"
+
+    assert history[1]["old_status"] == "pending"
+    assert history[1]["new_status"] == "paid"
+
+    assert history[2]["old_status"] == "paid"
+    assert history[2]["new_status"] == "shipped"
+
+    assert history[3]["old_status"] == "shipped"
+    assert history[3]["new_status"] == "completed"
+
+
+def test_user_cannot_view_another_users_order_status_history():
+    headers1 = create_test_user(
+        "historyuser2",
+        "historyuser2@example.com"
+    )
+
+    headers2 = create_test_user(
+        "historyuser3",
+        "historyuser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Private History Product",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers1
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers1
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers1
+    )
+
+    assert order_response.status_code == 201
+
+    order_id = order_response.json()["id"]
+
+    response = client.get(
+        f"/orders/{order_id}/status-history",
+        headers=headers2
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Order not found"
+
+def test_order_status_history_tracks_cancel():
+    headers = create_test_user(
+        "historycanceluser",
+        "historycanceluser@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Cancel History Product",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+
+    order_id = order_response.json()["id"]
+
+    cancel_response = client.post(
+        f"/orders/{order_id}/cancel",
+        headers=headers
+    )
+
+    assert cancel_response.status_code == 200
+
+    response = client.get(
+        f"/orders/{order_id}/status-history",
+        headers=headers
+    )
+
+    assert response.status_code == 200
+
+    history = response.json()
+
+    assert len(history) == 2
+
+    assert history[0]["old_status"] is None
+    assert history[0]["new_status"] == "pending"
+
+    assert history[1]["old_status"] == "pending"
+    assert history[1]["new_status"] == "cancelled"
+
+
+def test_order_status_history_tracks_refund():
+    headers = create_test_user(
+        "historyrefunduser",
+        "historyrefunduser@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Refund History Product",
+            "price": 2500,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+
+    order_id = order_response.json()["id"]
+
+    payment_response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert payment_response.status_code == 201
+
+    refund_response = client.post(
+        f"/orders/{order_id}/refund",
+        headers=headers
+    )
+
+    assert refund_response.status_code == 200
+    assert refund_response.json()["status"] == "refunded"
+
+    response = client.get(
+        f"/orders/{order_id}/status-history",
+        headers=headers
+    )
+
+    assert response.status_code == 200
+
+    history = response.json()
+
+    assert len(history) == 3
+
+    assert history[0]["old_status"] is None
+    assert history[0]["new_status"] == "pending"
+
+    assert history[1]["old_status"] == "pending"
+    assert history[1]["new_status"] == "paid"
+
+    assert history[2]["old_status"] == "paid"
+    assert history[2]["new_status"] == "cancelled"

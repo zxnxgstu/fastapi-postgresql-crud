@@ -85,3 +85,9 @@ class Order(Base):
     uselist=False,
     cascade="all, delete-orphan"
 )
+    status_history = relationship(
+    "OrderStatusHistory",
+    back_populates="order",
+    cascade="all, delete-orphan",
+    order_by="OrderStatusHistory.changed_at"
+)

@@ -14,6 +14,7 @@ from .reviews import ReviewCreate, ReviewUpdate, ReviewResponse
 from .price_history import PriceHistoryResponse
 from .notifications import PriceDropNotificationResponse
 from .payments import PaymentResponse
+from .order_status_history import OrderStatusHistoryResponse
 
 __all__ = [
     "ProductCreate",
@@ -41,4 +42,5 @@ __all__ = [
     "PriceHistoryResponse",
     "PriceDropNotificationResponse"
     "PaymentResponse"
+    "OrderStatusHistoryResponse"
 ]

@@ -68,6 +68,11 @@ from .payments import (
     refund_payment,
 )
 
+from .order_status_history import (
+    create_order_status_history,
+    get_order_status_history,
+)
+
 __all__ = [
     "get_products",
     "get_product",
@@ -112,5 +117,6 @@ __all__ = [
     "get_payment_by_order",
     "create_payment",
     "refund_payment",
-    "refund_payment",
+    "create_order_status_history",
+    "get_order_status_history",
 ]

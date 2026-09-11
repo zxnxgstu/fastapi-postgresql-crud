@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-
+from .order_status_history import create_order_status_history
 from models import Order, Payment, Product
 
 
@@ -18,6 +18,8 @@ def create_payment(
     db: Session,
     order: Order
 ):
+    old_status = order.status
+
     payment = Payment(
         order_id=order.id,
         amount=order.total_price,
@@ -27,6 +29,14 @@ def create_payment(
     order.status = "paid"
 
     db.add(payment)
+
+    create_order_status_history(
+        db=db,
+        order_id=order.id,
+        old_status=old_status,
+        new_status="paid"
+    )
+
     db.commit()
     db.refresh(payment)
 
@@ -46,6 +56,8 @@ def refund_payment(
     if order.status == "completed":
         raise ValueError("Completed order cannot be refunded")
 
+    old_status = order.status
+
     for order_item in order.items:
         if order_item.product_id is None:
             continue
@@ -62,6 +74,13 @@ def refund_payment(
 
     payment.status = "refunded"
     order.status = "cancelled"
+
+    create_order_status_history(
+        db=db,
+        order_id=order.id,
+        old_status=old_status,
+        new_status="cancelled"
+    )
 
     db.commit()
     db.refresh(payment)

@@ -4,6 +4,7 @@ from typing import Literal
 import crud
 from dependencies import get_db, get_current_admin, get_current_user
 from models import User
+from schemas import OrderStatusHistoryResponse
 from schemas import (
     OrderCreate,
     OrderResponse,
@@ -301,3 +302,29 @@ def refund_order(
             status_code=400,
             detail=str(exc)
         )
+
+@router.get(
+    "/orders/{order_id}/status-history",
+    response_model=list[OrderStatusHistoryResponse]
+)
+def get_order_status_history(
+    order_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    order = crud.get_user_order(
+        db,
+        order_id,
+        current_user.id
+    )
+
+    if order is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Order not found"
+        )
+
+    return crud.get_order_status_history(
+        db,
+        order.id
+    )

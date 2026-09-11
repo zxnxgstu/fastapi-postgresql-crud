@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from .order_status_history import create_order_status_history
 from models import CartItem, Order, OrderItem, Product, PromoCode
 from schemas import OrderCreate, OrderStatusUpdate
 
@@ -60,6 +61,13 @@ def create_order_from_cart(
 
     db.add(order)
     db.flush()
+
+    create_order_status_history(
+        db=db,
+        order_id=order.id,
+        old_status=None,
+        new_status="pending"
+    )
 
     for cart_item in cart_items:
         product = cart_item.product
@@ -172,17 +180,25 @@ def update_order_status(
     }
 
     new_status = status_data.status
+    old_status = order.status
 
     if new_status not in allowed_transitions.get(
-        order.status,
+        old_status,
         set()
     ):
         raise ValueError(
             f"Cannot change order status from "
-            f"{order.status} to {new_status}"
+            f"{old_status} to {new_status}"
         )
 
     order.status = new_status
+
+    create_order_status_history(
+        db=db,
+        order_id=order.id,
+        old_status=old_status,
+        new_status=new_status
+    )
 
     db.commit()
     db.refresh(order)
@@ -201,9 +217,9 @@ def cancel_order(
         raise ValueError("Paid order must be refunded")
 
     if order.status == "completed":
-        raise ValueError(
-            "Completed order cannot be cancelled"
-        )
+        raise ValueError("Completed order cannot be cancelled")
+
+    old_status = order.status
 
     for order_item in order.items:
         if order_item.product_id is None:
@@ -211,9 +227,7 @@ def cancel_order(
 
         product = (
             db.query(Product)
-            .filter(
-                Product.id == order_item.product_id
-            )
+            .filter(Product.id == order_item.product_id)
             .first()
         )
 
@@ -222,6 +236,13 @@ def cancel_order(
             product.in_stock = True
 
     order.status = "cancelled"
+
+    create_order_status_history(
+        db=db,
+        order_id=order.id,
+        old_status=old_status,
+        new_status="cancelled"
+    )
 
     db.commit()
     db.refresh(order)
