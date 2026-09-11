@@ -15,6 +15,7 @@ from schemas import (
     ShipmentEventResponse,
     ShipmentTrackingHistoryResponse,
     AdminStatsResponse,
+    TopProductResponse,
 )
 from dependencies import (
     get_current_admin,
@@ -507,3 +508,17 @@ def get_admin_statistics(
     current_admin: User = Depends(get_current_admin)
 ):
     return crud.get_admin_stats(db)
+
+@router.get(
+    "/admin/stats/top-products",
+    response_model=list[TopProductResponse]
+)
+def get_admin_top_products(
+    limit: int = Query(default=5, ge=1, le=20),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin)
+):
+    return crud.get_top_products(
+        db=db,
+        limit=limit
+    )

@@ -99,7 +99,10 @@ from .shipment_tracking_history import (
     create_shipment_tracking_history,
     get_shipment_tracking_history,
 )
-from .admin_stats import get_admin_stats
+from .admin_stats import (
+    get_admin_stats,
+    get_top_products,
+)
 
 __all__ = [
     "get_products",
@@ -165,4 +168,5 @@ __all__ = [
     "create_shipment_tracking_history",
     "get_shipment_tracking_history"
     "get_admin_stats"
+    "get_top_products",
 ]

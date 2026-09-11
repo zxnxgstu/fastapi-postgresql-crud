@@ -201,6 +201,10 @@ REST API для управления товарами, созданный на F
 - Admin store statistics
 - Admins can view total users, products, orders, completed orders, and total revenue
 - Revenue is calculated only from completed orders
+- Top selling products for admins
+- Products are ranked by total units sold
+- Revenue is calculated from completed orders
+- Results can be limited with the limit query parameter
 
 ## API endpoints
 
@@ -239,4 +243,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 134 automated API tests.
+The project currently includes 137 automated API tests.

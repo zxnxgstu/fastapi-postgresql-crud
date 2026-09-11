@@ -5993,3 +5993,162 @@ def test_admin_stats_revenue_counts_only_completed_orders(
         final_stats["total_revenue"]
         == initial_stats["total_revenue"] + order_total
     )
+
+def test_admin_can_view_top_products(admin_headers):
+    response = client.get(
+        "/admin/stats/top-products",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert isinstance(data, list)
+
+
+def test_regular_user_cannot_view_top_products():
+    headers = create_test_user(
+        "topproductsuser1",
+        "topproductsuser1@example.com"
+    )
+
+    response = client.get(
+        "/admin/stats/top-products",
+        headers=headers
+    )
+
+    assert response.status_code == 403
+
+
+def test_top_products_are_sorted_by_units_sold_and_limited(
+    admin_headers
+):
+    headers = create_test_user(
+        "topproductsuser2",
+        "topproductsuser2@example.com"
+    )
+
+    product1_response = client.post(
+        "/products",
+        json={
+            "name": "Top Product A",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product2_response = client.post(
+        "/products",
+        json={
+            "name": "Top Product B",
+            "price": 2000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product1_id = product1_response.json()["id"]
+    product2_id = product2_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product1_id,
+            "quantity": 3
+        },
+        headers=headers
+    )
+
+    order1_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order1_id = order1_response.json()["id"]
+
+    client.post(
+        f"/orders/{order1_id}/pay",
+        headers=headers
+    )
+
+    client.patch(
+        f"/admin/orders/{order1_id}/status",
+        json={"status": "shipped"},
+        headers=admin_headers
+    )
+
+    advance_shipment_to_out_for_delivery(
+        order1_id,
+        admin_headers
+    )
+
+    client.post(
+        f"/admin/orders/{order1_id}/shipment-events",
+        json={
+            "status": "delivered",
+            "comment": "Delivered"
+        },
+        headers=admin_headers
+    )
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product2_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order2_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order2_id = order2_response.json()["id"]
+
+    client.post(
+        f"/orders/{order2_id}/pay",
+        headers=headers
+    )
+
+    client.patch(
+        f"/admin/orders/{order2_id}/status",
+        json={"status": "shipped"},
+        headers=admin_headers
+    )
+
+    advance_shipment_to_out_for_delivery(
+        order2_id,
+        admin_headers
+    )
+
+    client.post(
+        f"/admin/orders/{order2_id}/shipment-events",
+        json={
+            "status": "delivered",
+            "comment": "Delivered"
+        },
+        headers=admin_headers
+    )
+
+    response = client.get(
+        "/admin/stats/top-products?limit=1",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1
+    assert data[0]["product_id"] == product1_id
+    assert data[0]["product_name"] == "Top Product A"
+    assert data[0]["units_sold"] == 3
+    assert data[0]["revenue"] == 3000
