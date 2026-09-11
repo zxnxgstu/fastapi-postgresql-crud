@@ -270,6 +270,10 @@ REST API для управления товарами, созданный на F
 - Old refresh tokens are revoked after rotation
 - Logout revokes the current refresh token
 - Revoked refresh tokens cannot be reused
+- Logout from all devices
+- All active refresh token sessions can be revoked at once
+- Logout-all only affects the authenticated user's sessions
+- Other users' refresh tokens remain valid
 
 ## API endpoints
 
@@ -308,4 +312,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 198 automated API tests.
+The project currently includes 201 automated API tests.

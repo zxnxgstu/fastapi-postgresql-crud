@@ -120,6 +120,7 @@ from .refresh_tokens import (
     create_refresh_token_session,
     get_refresh_token_session,
     revoke_refresh_token_session,
+    revoke_all_user_refresh_tokens,
 )
 
 
@@ -202,4 +203,5 @@ __all__ = [
     "create_refresh_token_session",
     "get_refresh_token_session",
     "revoke_refresh_token_session",
+    "revoke_all_user_refresh_tokens",
 ]

@@ -251,6 +251,20 @@ def logout(
 
     return Response(status_code=204)
 
+@router.post("/logout-all", status_code=204)
+def logout_all(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    crud.revoke_all_user_refresh_tokens(
+        db=db,
+        user_id=current_user.id
+    )
+
+    db.commit()
+
+    return Response(status_code=204)
+
 @router.get("/me", response_model=UserResponse)
 def get_me(
     current_user: User = Depends(get_current_user)

@@ -8706,3 +8706,160 @@ def test_access_token_cannot_be_used_for_logout():
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid refresh token"
+
+def test_logout_all_revokes_all_user_refresh_tokens():
+    client.post(
+        "/register",
+        json={
+            "username": "logoutalluser1",
+            "email": "logoutalluser1@example.com",
+            "password": "password123"
+        }
+    )
+
+    first_login = client.post(
+        "/login",
+        data={
+            "username": "logoutalluser1",
+            "password": "password123"
+        }
+    )
+
+    second_login = client.post(
+        "/login",
+        data={
+            "username": "logoutalluser1",
+            "password": "password123"
+        }
+    )
+
+    assert first_login.status_code == 200
+    assert second_login.status_code == 200
+
+    first_refresh_token = (
+        first_login.json()["refresh_token"]
+    )
+
+    second_refresh_token = (
+        second_login.json()["refresh_token"]
+    )
+
+    access_token = first_login.json()["access_token"]
+
+    logout_response = client.post(
+        "/logout-all",
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert logout_response.status_code == 204
+
+    first_refresh_response = client.post(
+        "/refresh",
+        json={
+            "refresh_token": first_refresh_token
+        }
+    )
+
+    second_refresh_response = client.post(
+        "/refresh",
+        json={
+            "refresh_token": second_refresh_token
+        }
+    )
+
+    assert first_refresh_response.status_code == 401
+    assert second_refresh_response.status_code == 401
+
+    assert (
+        first_refresh_response.json()["detail"]
+        == "Invalid refresh token"
+    )
+
+    assert (
+        second_refresh_response.json()["detail"]
+        == "Invalid refresh token"
+    )
+
+
+def test_logout_all_does_not_revoke_other_user_tokens():
+    client.post(
+        "/register",
+        json={
+            "username": "logoutalluser2",
+            "email": "logoutalluser2@example.com",
+            "password": "password123"
+        }
+    )
+
+    client.post(
+        "/register",
+        json={
+            "username": "logoutalluser3",
+            "email": "logoutalluser3@example.com",
+            "password": "password123"
+        }
+    )
+
+    first_login = client.post(
+        "/login",
+        data={
+            "username": "logoutalluser2",
+            "password": "password123"
+        }
+    )
+
+    second_login = client.post(
+        "/login",
+        data={
+            "username": "logoutalluser3",
+            "password": "password123"
+        }
+    )
+
+    first_access_token = (
+        first_login.json()["access_token"]
+    )
+
+    first_refresh_token = (
+        first_login.json()["refresh_token"]
+    )
+
+    second_refresh_token = (
+        second_login.json()["refresh_token"]
+    )
+
+    logout_response = client.post(
+        "/logout-all",
+        headers={
+            "Authorization": f"Bearer {first_access_token}"
+        }
+    )
+
+    assert logout_response.status_code == 204
+
+    first_refresh_response = client.post(
+        "/refresh",
+        json={
+            "refresh_token": first_refresh_token
+        }
+    )
+
+    second_refresh_response = client.post(
+        "/refresh",
+        json={
+            "refresh_token": second_refresh_token
+        }
+    )
+
+    assert first_refresh_response.status_code == 401
+    assert second_refresh_response.status_code == 200
+
+
+def test_logout_all_requires_authentication():
+    response = client.post(
+        "/logout-all"
+    )
+
+    assert response.status_code == 401

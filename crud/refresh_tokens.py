@@ -40,3 +40,21 @@ def revoke_refresh_token_session(
     session.revoked = True
 
     return session
+
+def revoke_all_user_refresh_tokens(
+    db: Session,
+    user_id: int
+):
+    sessions = (
+        db.query(RefreshToken)
+        .filter(
+            RefreshToken.user_id == user_id,
+            RefreshToken.revoked.is_(False)
+        )
+        .all()
+    )
+
+    for session in sessions:
+        session.revoked = True
+
+    return len(sessions)
