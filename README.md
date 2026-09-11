@@ -198,6 +198,9 @@ REST API для управления товарами, созданный на F
 - Actual delivery timestamp
 - delivered_at is stored when a delivered shipment event is created
 - delivered_at is returned with order data
+- Admin store statistics
+- Admins can view total users, products, orders, completed orders, and total revenue
+- Revenue is calculated only from completed orders
 
 ## API endpoints
 
@@ -236,4 +239,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 131 automated API tests.
+The project currently includes 134 automated API tests.

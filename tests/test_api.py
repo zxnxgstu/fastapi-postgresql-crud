@@ -5832,3 +5832,164 @@ def test_shipment_event_cannot_go_backwards(admin_headers):
         response.json()["detail"]
         == "Invalid shipment status transition"
     )
+
+def test_admin_can_view_store_stats(admin_headers):
+    response = client.get(
+        "/admin/stats",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    stats = response.json()
+
+    assert "total_users" in stats
+    assert "total_products" in stats
+    assert "total_orders" in stats
+    assert "completed_orders" in stats
+    assert "total_revenue" in stats
+
+    assert isinstance(stats["total_users"], int)
+    assert isinstance(stats["total_products"], int)
+    assert isinstance(stats["total_orders"], int)
+    assert isinstance(stats["completed_orders"], int)
+    assert isinstance(stats["total_revenue"], int)
+
+
+def test_regular_user_cannot_view_store_stats():
+    headers = create_test_user(
+        "adminstatsuser1",
+        "adminstatsuser1@example.com"
+    )
+
+    response = client.get(
+        "/admin/stats",
+        headers=headers
+    )
+
+    assert response.status_code == 403
+
+
+def test_admin_stats_revenue_counts_only_completed_orders(
+    admin_headers
+):
+    initial_response = client.get(
+        "/admin/stats",
+        headers=admin_headers
+    )
+
+    assert initial_response.status_code == 200
+
+    initial_stats = initial_response.json()
+
+    headers = create_test_user(
+        "adminstatsuser2",
+        "adminstatsuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Admin Stats Product",
+            "price": 2500,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    assert product_response.status_code == 201
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+
+    order = order_response.json()
+    order_id = order["id"]
+    order_total = order["total_price"]
+
+    pending_stats_response = client.get(
+        "/admin/stats",
+        headers=admin_headers
+    )
+
+    assert pending_stats_response.status_code == 200
+
+    pending_stats = pending_stats_response.json()
+
+    assert (
+        pending_stats["total_orders"]
+        == initial_stats["total_orders"] + 1
+    )
+
+    assert (
+        pending_stats["total_revenue"]
+        == initial_stats["total_revenue"]
+    )
+
+    payment_response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert payment_response.status_code == 201
+
+    shipped_response = client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "shipped"
+        },
+        headers=admin_headers
+    )
+
+    assert shipped_response.status_code == 200
+
+    advance_shipment_to_out_for_delivery(
+        order_id,
+        admin_headers
+    )
+
+    delivered_response = client.post(
+        f"/admin/orders/{order_id}/shipment-events",
+        json={
+            "status": "delivered",
+            "comment": "Delivered for admin stats test"
+        },
+        headers=admin_headers
+    )
+
+    assert delivered_response.status_code == 201
+
+    final_response = client.get(
+        "/admin/stats",
+        headers=admin_headers
+    )
+
+    assert final_response.status_code == 200
+
+    final_stats = final_response.json()
+
+    assert (
+        final_stats["completed_orders"]
+        == initial_stats["completed_orders"] + 1
+    )
+
+    assert (
+        final_stats["total_revenue"]
+        == initial_stats["total_revenue"] + order_total
+    )

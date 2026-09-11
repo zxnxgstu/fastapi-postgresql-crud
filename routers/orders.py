@@ -14,6 +14,7 @@ from schemas import (
     ShipmentEventCreate,
     ShipmentEventResponse,
     ShipmentTrackingHistoryResponse,
+    AdminStatsResponse,
 )
 from dependencies import (
     get_current_admin,
@@ -496,3 +497,13 @@ def create_order_shipment_event(
             status_code=400,
             detail=str(exc)
         )
+
+@router.get(
+    "/admin/stats",
+    response_model=AdminStatsResponse
+)
+def get_admin_statistics(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin)
+):
+    return crud.get_admin_stats(db)

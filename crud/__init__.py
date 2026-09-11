@@ -99,6 +99,7 @@ from .shipment_tracking_history import (
     create_shipment_tracking_history,
     get_shipment_tracking_history,
 )
+from .admin_stats import get_admin_stats
 
 __all__ = [
     "get_products",
@@ -163,4 +164,5 @@ __all__ = [
     "create_shipment_event",
     "create_shipment_tracking_history",
     "get_shipment_tracking_history"
+    "get_admin_stats"
 ]

@@ -32,6 +32,7 @@ from .shipment_events import (
     ShipmentEventResponse,
 )
 from .shipment_tracking_history import ShipmentTrackingHistoryResponse
+from .admin_stats import AdminStatsResponse
 
 __all__ = [
     "ProductCreate",
@@ -71,4 +72,5 @@ __all__ = [
     "ShipmentEventCreate",
     "ShipmentEventResponse"
     "ShipmentTrackingHistoryResponse",
+    "AdminStatsResponse"
 ]
