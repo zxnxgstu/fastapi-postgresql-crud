@@ -10527,3 +10527,272 @@ def test_expired_refresh_session_is_not_listed(
         session["id"] != refresh_session_id
         for session in sessions
     )
+
+def test_user_can_update_own_username():
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    username = f"profileuser_{suffix}"
+    email = f"profileuser_{suffix}@example.com"
+    password = "password123"
+
+    register_response = client.post(
+        "/register",
+        json={
+            "username": username,
+            "email": email,
+            "password": password
+        }
+    )
+
+    assert register_response.status_code == 201
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": username,
+            "password": password
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = login_response.json()["access_token"]
+
+    new_username = f"updated_{suffix}"
+
+    update_response = client.patch(
+        "/me",
+        json={
+            "username": new_username
+        },
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert update_response.status_code == 200
+    assert update_response.json()["username"] == new_username
+    assert update_response.json()["email"] == email
+
+
+def test_user_can_update_own_email():
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    username = f"profileemail_{suffix}"
+    email = f"profileemail_{suffix}@example.com"
+    password = "password123"
+
+    register_response = client.post(
+        "/register",
+        json={
+            "username": username,
+            "email": email,
+            "password": password
+        }
+    )
+
+    assert register_response.status_code == 201
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": username,
+            "password": password
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = login_response.json()["access_token"]
+
+    new_email = f"updated_{suffix}@example.com"
+
+    update_response = client.patch(
+        "/me",
+        json={
+            "email": new_email
+        },
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert update_response.status_code == 200
+    assert update_response.json()["username"] == username
+    assert update_response.json()["email"] == new_email
+
+
+def test_user_cannot_use_existing_username():
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    first_username = f"profilefirst_{suffix}"
+    second_username = f"profilesecond_{suffix}"
+
+    first_email = f"profilefirst_{suffix}@example.com"
+    second_email = f"profilesecond_{suffix}@example.com"
+
+    password = "password123"
+
+    first_register = client.post(
+        "/register",
+        json={
+            "username": first_username,
+            "email": first_email,
+            "password": password
+        }
+    )
+
+    assert first_register.status_code == 201
+
+    second_register = client.post(
+        "/register",
+        json={
+            "username": second_username,
+            "email": second_email,
+            "password": password
+        }
+    )
+
+    assert second_register.status_code == 201
+
+    second_login = client.post(
+        "/login",
+        data={
+            "username": second_username,
+            "password": password
+        }
+    )
+
+    assert second_login.status_code == 200
+
+    access_token = second_login.json()["access_token"]
+
+    update_response = client.patch(
+        "/me",
+        json={
+            "username": first_username
+        },
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert update_response.status_code == 400
+    assert update_response.json()["detail"] == (
+        "Username already exists"
+    )
+
+
+def test_user_cannot_use_existing_email():
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    first_username = f"emailfirst_{suffix}"
+    second_username = f"emailsecond_{suffix}"
+
+    first_email = f"emailfirst_{suffix}@example.com"
+    second_email = f"emailsecond_{suffix}@example.com"
+
+    password = "password123"
+
+    first_register = client.post(
+        "/register",
+        json={
+            "username": first_username,
+            "email": first_email,
+            "password": password
+        }
+    )
+
+    assert first_register.status_code == 201
+
+    second_register = client.post(
+        "/register",
+        json={
+            "username": second_username,
+            "email": second_email,
+            "password": password
+        }
+    )
+
+    assert second_register.status_code == 201
+
+    second_login = client.post(
+        "/login",
+        data={
+            "username": second_username,
+            "password": password
+        }
+    )
+
+    assert second_login.status_code == 200
+
+    access_token = second_login.json()["access_token"]
+
+    update_response = client.patch(
+        "/me",
+        json={
+            "email": first_email
+        },
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert update_response.status_code == 400
+    assert update_response.json()["detail"] == (
+        "Email already exists"
+    )
+
+
+def test_empty_profile_update_keeps_user_unchanged():
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    username = f"profileempty_{suffix}"
+    email = f"profileempty_{suffix}@example.com"
+    password = "password123"
+
+    register_response = client.post(
+        "/register",
+        json={
+            "username": username,
+            "email": email,
+            "password": password
+        }
+    )
+
+    assert register_response.status_code == 201
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": username,
+            "password": password
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = login_response.json()["access_token"]
+
+    update_response = client.patch(
+        "/me",
+        json={},
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert update_response.status_code == 200
+    assert update_response.json()["username"] == username
+    assert update_response.json()["email"] == email
+

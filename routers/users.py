@@ -23,6 +23,7 @@ from schemas import (
     UserRoleUpdate,
     UserPasswordChange,
     UserActiveUpdate,
+    UserProfileUpdate,
 )
 
 
@@ -326,6 +327,27 @@ def get_me(
     current_user: User = Depends(get_current_user)
 ):
     return current_user
+
+@router.patch(
+    "/me",
+    response_model=UserResponse
+)
+def update_me(
+    update_data: UserProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        return crud.update_user_profile(
+            db=db,
+            user=current_user,
+            update_data=update_data
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc)
+        )
 
 @router.patch("/me/password", status_code=204)
 def change_password(

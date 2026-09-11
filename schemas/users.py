@@ -49,3 +49,16 @@ class RefreshSessionResponse(BaseModel):
     revoked: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+class UserProfileUpdate(BaseModel):
+    username: str | None = Field(
+        default=None,
+        min_length=3,
+        max_length=50
+    )
+
+    email: str | None = Field(
+        default=None,
+        min_length=5,
+        max_length=255
+    )

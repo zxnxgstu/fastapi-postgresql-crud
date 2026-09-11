@@ -124,11 +124,11 @@ from .refresh_tokens import (
     get_user_refresh_sessions,
     get_user_refresh_session,
 )
-
 from .audit_logs import (
     create_audit_log,
     get_audit_logs,
 )
+from .users import update_user_profile
 
 
 __all__ = [
@@ -215,4 +215,5 @@ __all__ = [
     "get_user_refresh_session",
     "create_audit_log",
     "get_audit_logs",
+    "update_user_profile",
 ]

@@ -308,6 +308,11 @@ REST API для управления товарами, созданный на F
 - Access token validation rejects non-access JWTs
 - Expired refresh sessions are excluded from active session lists
 - Refresh session expiration is validated against UTC time
+- Update own profile with PATCH /me
+- Change username and email
+- Username uniqueness validation
+- Email uniqueness validation
+- Partial profile updates
 
 ## API endpoints
 
@@ -346,4 +351,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 233 automated API tests.
+The project currently includes 238 automated API tests.

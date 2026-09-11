@@ -55,6 +55,7 @@ from .inventory import RestockRequest
 from .stock_adjustment import StockAdjustmentRequest
 from .inventory_summary import InventorySummaryResponse
 from .audit_logs import AuditLogResponse
+from .users import UserProfileUpdate
 
 __all__ = [
     "ProductCreate",
@@ -108,4 +109,5 @@ __all__ = [
     "UserPasswordChange",
     "UserActiveUpdate",
     "AuditLogResponse",
+    "UserProfileUpdate",
 ]
