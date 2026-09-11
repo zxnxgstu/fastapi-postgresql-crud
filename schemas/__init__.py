@@ -27,6 +27,10 @@ from .delivery_methods import (
     DeliveryMethodUpdate,
     DeliveryMethodResponse,
 )
+from .shipment_events import (
+    ShipmentEventCreate,
+    ShipmentEventResponse,
+)
 
 __all__ = [
     "ProductCreate",
@@ -63,4 +67,6 @@ __all__ = [
     "DeliveryMethodResponse",
     "ShipmentTrackingUpdate",
     "EstimatedDeliveryDateUpdate",
+    "ShipmentEventCreate",
+    "ShipmentEventResponse"
 ]

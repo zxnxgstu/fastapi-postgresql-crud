@@ -160,3 +160,9 @@ class Order(Base):
     Date,
     nullable=True
 )
+    shipment_events = relationship(
+    "ShipmentEvent",
+    back_populates="order",
+    cascade="all, delete-orphan",
+    order_by="ShipmentEvent.created_at"
+)

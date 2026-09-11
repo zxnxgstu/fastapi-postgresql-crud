@@ -91,6 +91,10 @@ from .delivery_methods import (
     create_delivery_method,
     update_delivery_method,
 )
+from .shipment_events import (
+    get_order_shipment_events,
+    create_shipment_event,
+)
 
 __all__ = [
     "get_products",
@@ -151,4 +155,6 @@ __all__ = [
     "update_delivery_method"
     "update_shipment_tracking",
     "update_estimated_delivery_date"
+    "get_order_shipment_events",
+    "create_shipment_event",
 ]

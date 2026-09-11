@@ -10,7 +10,9 @@ from schemas import (
     OrderResponse,
     OrderStatusUpdate,
     PaymentResponse,
-    ShipmentTrackingUpdate
+    ShipmentTrackingUpdate,
+    ShipmentEventCreate,
+    ShipmentEventResponse,
 )
 from dependencies import (
     get_current_admin,
@@ -399,6 +401,67 @@ def update_order_estimated_delivery_date(
             estimated_delivery_date=(
                 delivery_data.estimated_delivery_date
             )
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc)
+        )
+@router.get(
+    "/orders/{order_id}/shipment-events",
+    response_model=list[ShipmentEventResponse]
+)
+def get_order_shipment_events(
+    order_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    order = crud.get_user_order(
+        db,
+        order_id,
+        current_user.id
+    )
+
+    if order is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Order not found"
+        )
+
+    return crud.get_order_shipment_events(
+        db,
+        order.id
+    )
+
+
+@router.post(
+    "/admin/orders/{order_id}/shipment-events",
+    response_model=ShipmentEventResponse,
+    status_code=201
+)
+def create_order_shipment_event(
+    order_id: int,
+    event_data: ShipmentEventCreate,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin)
+):
+    order = (
+        db.query(Order)
+        .filter(Order.id == order_id)
+        .first()
+    )
+
+    if order is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Order not found"
+        )
+
+    try:
+        return crud.create_shipment_event(
+            db=db,
+            order=order,
+            event_data=event_data
         )
     except ValueError as exc:
         raise HTTPException(

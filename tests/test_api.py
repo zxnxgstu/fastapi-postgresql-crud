@@ -4797,3 +4797,280 @@ def test_user_cannot_set_estimated_delivery_date():
     )
 
     assert response.status_code == 403
+
+def test_shipment_events_full_history(admin_headers):
+    headers = create_test_user(
+        "shipmenteventuser1",
+        "shipmenteventuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Shipment Event Product 1",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+
+    order_id = order_response.json()["id"]
+
+    payment_response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert payment_response.status_code == 201
+
+    shipped_response = client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "shipped"
+        },
+        headers=admin_headers
+    )
+
+    assert shipped_response.status_code == 200
+
+    events = [
+        {
+            "status": "picked_up",
+            "comment": "Package picked up"
+        },
+        {
+            "status": "in_transit",
+            "comment": "Package is in transit"
+        },
+        {
+            "status": "out_for_delivery",
+            "comment": "Courier is delivering package"
+        },
+        {
+            "status": "delivered",
+            "comment": "Package delivered"
+        },
+    ]
+
+    for event in events:
+        response = client.post(
+            f"/admin/orders/{order_id}/shipment-events",
+            json=event,
+            headers=admin_headers
+        )
+
+        assert response.status_code == 201
+
+    response = client.get(
+        f"/orders/{order_id}/shipment-events",
+        headers=headers
+    )
+
+    assert response.status_code == 200
+
+    history = response.json()
+
+    assert len(history) == 4
+
+    assert history[0]["status"] == "picked_up"
+    assert history[1]["status"] == "in_transit"
+    assert history[2]["status"] == "out_for_delivery"
+    assert history[3]["status"] == "delivered"
+
+
+def test_user_cannot_create_shipment_event():
+    headers = create_test_user(
+        "shipmenteventuser2",
+        "shipmenteventuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Shipment Event Product 2",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    response = client.post(
+        f"/admin/orders/{order_id}/shipment-events",
+        json={
+            "status": "picked_up",
+            "comment": "Should be forbidden"
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 403
+
+
+def test_shipment_event_cannot_be_added_to_pending_order(
+    admin_headers
+):
+    headers = create_test_user(
+        "shipmenteventuser3",
+        "shipmenteventuser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Shipment Event Product 3",
+            "price": 1200,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    response = client.post(
+        f"/admin/orders/{order_id}/shipment-events",
+        json={
+            "status": "picked_up",
+            "comment": "Too early"
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "Shipment events can only be added to shipped orders"
+    )
+def test_user_cannot_view_another_users_shipment_events(
+    admin_headers
+):
+    headers1 = create_test_user(
+        "shipmenteventuser4",
+        "shipmenteventuser4@example.com"
+    )
+
+    headers2 = create_test_user(
+        "shipmenteventuser5",
+        "shipmenteventuser5@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Shipment Event Product 4",
+            "price": 1400,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers1
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers1
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers1
+    )
+
+    assert order_response.status_code == 201
+
+    order_id = order_response.json()["id"]
+
+    client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers1
+    )
+
+    client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "shipped"
+        },
+        headers=admin_headers
+    )
+
+    event_response = client.post(
+        f"/admin/orders/{order_id}/shipment-events",
+        json={
+            "status": "picked_up",
+            "comment": "Package picked up"
+        },
+        headers=admin_headers
+    )
+
+    assert event_response.status_code == 201
+
+    response = client.get(
+        f"/orders/{order_id}/shipment-events",
+        headers=headers2
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Order not found"

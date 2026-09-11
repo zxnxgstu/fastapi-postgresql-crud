@@ -177,6 +177,13 @@ REST API для управления товарами, созданный на F
 - Estimated delivery dates cannot be in the past
 - Regular users cannot modify the estimated delivery date
 - Estimated delivery date is returned with order data
+- Shipment events history
+- Admins can add shipment events for shipped orders
+- Supported shipment statuses: picked_up, in_transit, out_for_delivery, delivered
+- Shipment events can include an optional comment
+- Users can view shipment history only for their own orders
+- Regular users cannot create shipment events
+- Shipment events cannot be added before an order is shipped
 
 ## API endpoints
 
@@ -215,4 +222,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 118 automated API tests.
+The project currently includes 122 automated API tests.
