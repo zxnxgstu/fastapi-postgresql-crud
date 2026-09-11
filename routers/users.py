@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from sqlalchemy import or_
+from typing import Literal
 import crud
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -362,12 +364,46 @@ def change_password(
 
     return Response(status_code=204)
 
-@router.get("/users", response_model=list[UserResponse])
+@router.get(
+    "/users",
+    response_model=list[UserResponse]
+)
 def get_users(
+    search: str | None = None,
+    role: Literal["user", "admin"] | None = None,
+    active: bool | None = None,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
     db: Session = Depends(get_db),
     current_admin: User = Depends(get_current_admin)
 ):
-    return db.query(User).all()
+    query = db.query(User)
+
+    if search:
+        query = query.filter(
+            or_(
+                User.username.ilike(f"%{search}%"),
+                User.email.ilike(f"%{search}%")
+            )
+        )
+
+    if role is not None:
+        query = query.filter(
+            User.role == role
+        )
+
+    if active is not None:
+        query = query.filter(
+            User.is_active == active
+        )
+
+    return (
+        query
+        .order_by(User.id.asc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 @router.patch("/users/{user_id}/role", response_model=UserResponse)
 def update_user_role(

@@ -289,6 +289,11 @@ REST API для управления товарами, созданный на F
 - Disabled users cannot use existing access tokens
 - Deactivation revokes all refresh token sessions
 - Admins can reactivate disabled accounts
+- Admin user search by username and email
+- Admin user filtering by role
+- Admin user filtering by active status
+- Combined user filters
+- User list pagination for admins
 
 ## API endpoints
 
@@ -327,4 +332,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 214 automated API tests.
+The project currently includes 219 automated API tests.

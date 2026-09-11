@@ -9508,3 +9508,208 @@ def test_admin_can_reactivate_user(admin_headers):
     )
 
     assert new_login.status_code == 200
+
+def test_admin_can_search_users_by_username_and_email(admin_headers):
+    headers = create_test_user(
+        "usersearchspecial1",
+        "usersearchspecial1@example.com"
+    )
+
+    me_response = client.get(
+        "/me",
+        headers=headers
+    )
+
+    assert me_response.status_code == 200
+
+    user_id = me_response.json()["id"]
+
+    username_response = client.get(
+        "/users?search=usersearchspecial1",
+        headers=admin_headers
+    )
+
+    assert username_response.status_code == 200
+    assert any(
+        user["id"] == user_id
+        for user in username_response.json()
+    )
+
+    email_response = client.get(
+        "/users?search=usersearchspecial1%40example.com",
+        headers=admin_headers
+    )
+
+    assert email_response.status_code == 200
+    assert any(
+        user["id"] == user_id
+        for user in email_response.json()
+    )
+
+
+def test_admin_can_filter_users_by_role(admin_headers):
+    user_headers = create_test_user(
+        "rolefiltergroup_user",
+        "rolefiltergroup_user@example.com"
+    )
+
+    admin_user_headers = create_test_user(
+        "rolefiltergroup_admin",
+        "rolefiltergroup_admin@example.com"
+    )
+
+    admin_user_me = client.get(
+        "/me",
+        headers=admin_user_headers
+    )
+
+    admin_user_id = admin_user_me.json()["id"]
+
+    role_response = client.patch(
+        f"/users/{admin_user_id}/role",
+        json={
+            "role": "admin"
+        },
+        headers=admin_headers
+    )
+
+    assert role_response.status_code == 200
+
+    response = client.get(
+        "/users?search=rolefiltergroup&role=admin",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1
+    assert data[0]["id"] == admin_user_id
+    assert data[0]["role"] == "admin"
+
+
+def test_admin_can_filter_users_by_active_status(admin_headers):
+    active_headers = create_test_user(
+        "activefiltergroup_active",
+        "activefiltergroup_active@example.com"
+    )
+
+    inactive_headers = create_test_user(
+        "activefiltergroup_inactive",
+        "activefiltergroup_inactive@example.com"
+    )
+
+    inactive_me = client.get(
+        "/me",
+        headers=inactive_headers
+    )
+
+    inactive_user_id = inactive_me.json()["id"]
+
+    deactivate_response = client.patch(
+        f"/users/{inactive_user_id}/active",
+        json={
+            "is_active": False
+        },
+        headers=admin_headers
+    )
+
+    assert deactivate_response.status_code == 200
+
+    response = client.get(
+        "/users?search=activefiltergroup&active=false",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1
+    assert data[0]["id"] == inactive_user_id
+    assert data[0]["is_active"] is False
+
+
+def test_admin_users_support_combined_filters(admin_headers):
+    headers = create_test_user(
+        "combineduserfilter_target",
+        "combineduserfilter_target@example.com"
+    )
+
+    other_headers = create_test_user(
+        "combineduserfilter_other",
+        "combineduserfilter_other@example.com"
+    )
+
+    me_response = client.get(
+        "/me",
+        headers=headers
+    )
+
+    user_id = me_response.json()["id"]
+
+    response = client.get(
+        (
+            "/users"
+            "?search=combineduserfilter"
+            "&role=user"
+            "&active=true"
+        ),
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert any(
+        user["id"] == user_id
+        for user in data
+    )
+
+    assert all(
+        user["role"] == "user"
+        and user["is_active"] is True
+        for user in data
+    )
+
+
+def test_admin_users_support_pagination(admin_headers):
+    first_headers = create_test_user(
+        "userpaginationgroup1",
+        "userpaginationgroup1@example.com"
+    )
+
+    second_headers = create_test_user(
+        "userpaginationgroup2",
+        "userpaginationgroup2@example.com"
+    )
+
+    third_headers = create_test_user(
+        "userpaginationgroup3",
+        "userpaginationgroup3@example.com"
+    )
+
+    full_response = client.get(
+        "/users?search=userpaginationgroup&limit=10",
+        headers=admin_headers
+    )
+
+    assert full_response.status_code == 200
+
+    full_data = full_response.json()
+
+    assert len(full_data) == 3
+
+    paged_response = client.get(
+        "/users?search=userpaginationgroup&skip=1&limit=1",
+        headers=admin_headers
+    )
+
+    assert paged_response.status_code == 200
+
+    paged_data = paged_response.json()
+
+    assert len(paged_data) == 1
+    assert paged_data[0]["id"] == full_data[1]["id"]
