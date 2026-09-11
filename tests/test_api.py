@@ -10862,3 +10862,92 @@ def test_username_change_updates_login_credentials():
 
     assert new_login_response.status_code == 200
     assert "access_token" in new_login_response.json()
+
+def test_tokens_remain_valid_after_username_change():
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    old_username = f"tokenold_{suffix}"
+    new_username = f"tokennew_{suffix}"
+    email = f"tokenrename_{suffix}@example.com"
+    password = "password123"
+
+    register_response = client.post(
+        "/register",
+        json={
+            "username": old_username,
+            "email": email,
+            "password": password
+        }
+    )
+
+    assert register_response.status_code == 201
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": old_username,
+            "password": password
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    tokens = login_response.json()
+
+    old_access_token = tokens["access_token"]
+    old_refresh_token = tokens["refresh_token"]
+
+    update_response = client.patch(
+        "/me",
+        json={
+            "username": new_username
+        },
+        headers={
+            "Authorization": f"Bearer {old_access_token}"
+        }
+    )
+
+    assert update_response.status_code == 200
+    assert update_response.json()["username"] == new_username
+
+    # Старый access token всё ещё должен работать,
+    # потому что sub теперь содержит user_id.
+    me_response = client.get(
+        "/me",
+        headers={
+            "Authorization": f"Bearer {old_access_token}"
+        }
+    )
+
+    assert me_response.status_code == 200
+    assert me_response.json()["username"] == new_username
+
+    # Старый refresh token также должен работать
+    # после изменения username.
+    refresh_response = client.post(
+        "/refresh",
+        json={
+            "refresh_token": old_refresh_token
+        }
+    )
+
+    assert refresh_response.status_code == 200
+
+    refreshed_tokens = refresh_response.json()
+
+    assert "access_token" in refreshed_tokens
+    assert "refresh_token" in refreshed_tokens
+
+    new_access_token = refreshed_tokens["access_token"]
+
+    final_me_response = client.get(
+        "/me",
+        headers={
+            "Authorization": f"Bearer {new_access_token}"
+        }
+    )
+
+    assert final_me_response.status_code == 200
+    assert final_me_response.json()["username"] == new_username

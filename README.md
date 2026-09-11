@@ -313,6 +313,10 @@ REST API для управления товарами, созданный на F
 - Username uniqueness validation
 - Email uniqueness validation
 - Partial profile updates
+- JWT subject uses stable user ID instead of username
+- Access tokens remain valid after username changes
+- Refresh tokens remain valid after username changes
+- Refresh token rotation continues to revoke old sessions
 
 ## API endpoints
 
@@ -351,4 +355,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 239 automated API tests.
+The project currently includes 240 automated API tests.

@@ -25,7 +25,9 @@ def get_current_user(
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
+        headers={
+            "WWW-Authenticate": "Bearer"
+        }
     )
 
     payload = decode_access_token(token)
@@ -33,14 +35,19 @@ def get_current_user(
     if payload is None:
         raise credentials_exception
 
-    username = payload.get("sub")
+    user_id_raw = payload.get("sub")
 
-    if username is None:
+    if user_id_raw is None:
+        raise credentials_exception
+
+    try:
+        user_id = int(user_id_raw)
+    except (TypeError, ValueError):
         raise credentials_exception
 
     user = (
         db.query(User)
-        .filter(User.username == username)
+        .filter(User.id == user_id)
         .first()
     )
 

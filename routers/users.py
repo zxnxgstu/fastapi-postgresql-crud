@@ -100,13 +100,12 @@ def login(
     )
 
     access_token = create_access_token(
-        data={"sub": user.username}
-    )
+        data={"sub": str(user.id)}
+)
 
     refresh_token = create_refresh_token(
-        data={"sub": user.username}
-    )
-
+        data={"sub": str(user.id)}
+)
     refresh_payload = decode_refresh_token(
         refresh_token
     )
@@ -146,10 +145,18 @@ def refresh_access_token(
             detail="Invalid refresh token"
         )
 
-    username = payload.get("sub")
+    user_id_raw = payload.get("sub")
     jti = payload.get("jti")
 
-    if username is None or jti is None:
+    if user_id_raw is None or jti is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid refresh token"
+        )
+
+    try:
+        user_id = int(user_id_raw)
+    except (TypeError, ValueError):
         raise HTTPException(
             status_code=401,
             detail="Invalid refresh token"
@@ -171,33 +178,43 @@ def refresh_access_token(
 
     user = (
         db.query(User)
-        .filter(User.username == username)
+        .filter(User.id == user_id)
         .first()
     )
 
     if user is None or not user.is_active:
         raise HTTPException(
-        status_code=401,
-        detail="Invalid refresh token"
-    )
+            status_code=401,
+            detail="Invalid refresh token"
+        )
 
     crud.revoke_refresh_token_session(
         refresh_session
     )
 
     access_token = create_access_token(
-        data={"sub": user.username}
+        data={
+            "sub": str(user.id)
+        }
     )
 
     new_refresh_token = create_refresh_token(
-        data={"sub": user.username}
+        data={
+            "sub": str(user.id)
+        }
     )
 
     new_payload = decode_refresh_token(
         new_refresh_token
     )
 
-    expires_at = datetime.fromtimestamp(
+    if new_payload is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid refresh token"
+        )
+
+    new_expires_at = datetime.fromtimestamp(
         new_payload["exp"],
         tz=timezone.utc
     )
@@ -206,7 +223,7 @@ def refresh_access_token(
         db=db,
         user_id=user.id,
         jti=new_payload["jti"],
-        expires_at=expires_at
+        expires_at=new_expires_at
     )
 
     db.commit()
