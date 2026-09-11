@@ -279,6 +279,11 @@ REST API для управления товарами, созданный на F
 - Users cannot revoke another user's sessions
 - Revoked sessions disappear from the active session list
 - Revoked refresh tokens cannot be reused
+- Authenticated users can change their password
+- Current password is verified before changing it
+- New password must differ from the old password
+- Password change revokes all refresh token sessions
+- Old refresh tokens cannot be used after a password change
 
 ## API endpoints
 
@@ -317,4 +322,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 205 automated API tests.
+The project currently includes 209 automated API tests.

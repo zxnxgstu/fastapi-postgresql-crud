@@ -9088,3 +9088,184 @@ def test_revoked_session_disappears_from_active_sessions():
     ]
 
     assert session_id not in session_ids
+
+def test_user_can_change_password():
+    client.post(
+        "/register",
+        json={
+            "username": "passwordchangeuser1",
+            "email": "passwordchangeuser1@example.com",
+            "password": "oldpassword123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "passwordchangeuser1",
+            "password": "oldpassword123"
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = login_response.json()["access_token"]
+
+    response = client.patch(
+        "/me/password",
+        json={
+            "current_password": "oldpassword123",
+            "new_password": "newpassword123"
+        },
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert response.status_code == 204
+
+    old_login = client.post(
+        "/login",
+        data={
+            "username": "passwordchangeuser1",
+            "password": "oldpassword123"
+        }
+    )
+
+    assert old_login.status_code == 401
+
+    new_login = client.post(
+        "/login",
+        data={
+            "username": "passwordchangeuser1",
+            "password": "newpassword123"
+        }
+    )
+
+    assert new_login.status_code == 200
+
+
+def test_change_password_rejects_incorrect_current_password():
+    client.post(
+        "/register",
+        json={
+            "username": "passwordchangeuser2",
+            "email": "passwordchangeuser2@example.com",
+            "password": "oldpassword123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "passwordchangeuser2",
+            "password": "oldpassword123"
+        }
+    )
+
+    access_token = login_response.json()["access_token"]
+
+    response = client.patch(
+        "/me/password",
+        json={
+            "current_password": "wrongpassword123",
+            "new_password": "newpassword123"
+        },
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "Current password is incorrect"
+    )
+
+
+def test_change_password_rejects_same_password():
+    client.post(
+        "/register",
+        json={
+            "username": "passwordchangeuser3",
+            "email": "passwordchangeuser3@example.com",
+            "password": "samepassword123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "passwordchangeuser3",
+            "password": "samepassword123"
+        }
+    )
+
+    access_token = login_response.json()["access_token"]
+
+    response = client.patch(
+        "/me/password",
+        json={
+            "current_password": "samepassword123",
+            "new_password": "samepassword123"
+        },
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "New password must be different"
+    )
+
+
+def test_change_password_revokes_refresh_tokens():
+    client.post(
+        "/register",
+        json={
+            "username": "passwordchangeuser4",
+            "email": "passwordchangeuser4@example.com",
+            "password": "oldpassword123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "passwordchangeuser4",
+            "password": "oldpassword123"
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = login_response.json()["access_token"]
+    refresh_token = login_response.json()["refresh_token"]
+
+    change_response = client.patch(
+        "/me/password",
+        json={
+            "current_password": "oldpassword123",
+            "new_password": "newpassword123"
+        },
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert change_response.status_code == 204
+
+    refresh_response = client.post(
+        "/refresh",
+        json={
+            "refresh_token": refresh_token
+        }
+    )
+
+    assert refresh_response.status_code == 401
+    assert (
+        refresh_response.json()["detail"]
+        == "Invalid refresh token"
+    )

@@ -19,6 +19,7 @@ from schemas import (
     RefreshTokenRequest,
     RefreshSessionResponse,
     UserRoleUpdate,
+    UserPasswordChange
 )
 
 
@@ -317,6 +318,43 @@ def get_me(
     current_user: User = Depends(get_current_user)
 ):
     return current_user
+
+@router.patch("/me/password", status_code=204)
+def change_password(
+    password_data: UserPasswordChange,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not verify_password(
+        password_data.current_password,
+        current_user.hashed_password
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Current password is incorrect"
+        )
+
+    if verify_password(
+        password_data.new_password,
+        current_user.hashed_password
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="New password must be different"
+        )
+
+    current_user.hashed_password = hash_password(
+        password_data.new_password
+    )
+
+    crud.revoke_all_user_refresh_tokens(
+        db=db,
+        user_id=current_user.id
+    )
+
+    db.commit()
+
+    return Response(status_code=204)
 
 @router.get("/users", response_model=list[UserResponse])
 def get_users(
