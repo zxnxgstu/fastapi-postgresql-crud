@@ -537,3 +537,256 @@ def test_user_cannot_modify_another_users_cart(auth_headers):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Cart item not found"
+
+def create_test_user(username: str, email: str):
+    client.post(
+        "/register",
+        json={
+            "username": username,
+            "email": email,
+            "password": "password123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": username,
+            "password": "password123"
+        }
+    )
+
+    token = login_response.json()["access_token"]
+
+    return {
+        "Authorization": f"Bearer {token}"
+    }
+
+def test_create_order_from_cart():
+    headers = create_test_user(
+        "orderuser1",
+        "orderuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Order Product",
+            "price": 1500,
+            "in_stock": True
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 2
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        "/orders",
+        headers=headers
+    )
+
+    assert response.status_code == 201
+
+    order = response.json()
+
+    assert order["total_price"] == 3000
+    assert order["status"] == "pending"
+    assert len(order["items"]) == 1
+    assert order["items"][0]["product_name"] == "Order Product"
+    assert order["items"][0]["price"] == 1500
+    assert order["items"][0]["quantity"] == 2
+
+    cart_response = client.get(
+        "/cart",
+        headers=headers
+    )
+
+    assert cart_response.status_code == 200
+    assert cart_response.json() == []
+
+
+def test_create_order_with_empty_cart():
+    headers = create_test_user(
+        "orderuser2",
+        "orderuser2@example.com"
+    )
+
+    response = client.post(
+        "/orders",
+        headers=headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Cart is empty"
+
+
+def test_get_my_orders():
+    headers = create_test_user(
+        "orderuser3",
+        "orderuser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "My Orders Product",
+            "price": 2000,
+            "in_stock": True
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    client.post(
+        "/orders",
+        headers=headers
+    )
+
+    response = client.get(
+        "/orders",
+        headers=headers
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()) >= 1
+
+
+def test_user_cannot_view_another_users_order():
+    first_headers = create_test_user(
+        "orderuser4",
+        "orderuser4@example.com"
+    )
+
+    second_headers = create_test_user(
+        "orderuser5",
+        "orderuser5@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Private Order Product",
+            "price": 2500,
+            "in_stock": True
+        },
+        headers=first_headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=first_headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        headers=first_headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    response = client.get(
+        f"/orders/{order_id}",
+        headers=second_headers
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Order not found"
+
+
+def test_user_cannot_view_admin_orders(auth_headers):
+    response = client.get(
+        "/admin/orders",
+        headers=auth_headers
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Admin access required"
+
+
+def test_admin_can_view_all_orders(admin_headers):
+    response = client.get(
+        "/admin/orders",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+def test_admin_can_update_order_status(admin_headers):
+    headers = create_test_user(
+        "orderuser6",
+        "orderuser6@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Status Product",
+            "price": 3500,
+            "in_stock": True
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    response = client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={"status": "paid"},
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "paid"
+
+
+def test_invalid_order_status(admin_headers):
+    response = client.patch(
+        "/admin/orders/999999/status",
+        json={"status": "banana"},
+        headers=admin_headers
+    )
+
+    assert response.status_code == 422

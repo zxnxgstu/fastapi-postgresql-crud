@@ -21,6 +21,15 @@ from .cart import (
     delete_cart_item,
 )
 
+from .orders import (
+    create_order_from_cart,
+    get_user_orders,
+    get_user_order,
+    get_order,
+    get_all_orders,
+    update_order_status,
+)
+
 __all__ = [
     "get_products",
     "get_product",
@@ -36,4 +45,10 @@ __all__ = [
     "add_cart_item",
     "update_cart_item",
     "delete_cart_item",
+    "create_order_from_cart",
+    "get_user_orders",
+    "get_user_order",
+    "get_order",
+    "get_all_orders",
+    "update_order_status"
 ]

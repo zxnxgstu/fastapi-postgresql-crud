@@ -51,6 +51,12 @@ REST API для управления товарами, созданный на F
 - Update cart item quantity
 - Remove products from cart
 - User-specific cart isolation
+- Order creation from shopping cart
+- Order history
+- Order item price snapshots
+- Automatic cart cleanup after checkout
+- Admin order management
+- Order status management
 
 ## API endpoints
 
@@ -73,6 +79,11 @@ REST API для управления товарами, созданный на F
 | POST | `/cart` | Add product to cart | Yes |
 | PATCH | `/cart/{item_id}` | Update cart item quantity | Yes |
 | DELETE | `/cart/{item_id}` | Remove item from cart | Yes |
+| POST | `/orders` | Create order from cart | Yes |
+| GET | `/orders` | Get current user's orders | Yes |
+| GET | `/orders/{order_id}` | Get current user's order | Yes |
+| GET | `/admin/orders` | Get all orders | Admin |
+| PATCH | `/admin/orders/{order_id}/status` | Change order status | Admin |
 
 ## Product filtering and pagination
 
@@ -84,4 +95,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 26 automated API tests.
+The project currently includes 34 automated API tests.

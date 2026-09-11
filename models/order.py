@@ -1,0 +1,64 @@
+from sqlalchemy import (
+    CheckConstraint,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    func,
+)
+from sqlalchemy.orm import relationship
+
+from database import Base
+
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
+
+    total_price = Column(
+        Integer,
+        nullable=False
+    )
+
+    status = Column(
+        String(20),
+        nullable=False,
+        server_default="pending"
+    )
+
+    created_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now()
+    )
+
+    user = relationship(
+        "User",
+        back_populates="orders"
+    )
+
+    items = relationship(
+        "OrderItem",
+        back_populates="order",
+        cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('pending', 'paid', 'shipped', 'completed', 'cancelled')",
+            name="ck_orders_status"
+        ),
+    )

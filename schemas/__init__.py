@@ -2,6 +2,11 @@ from .products import ProductCreate, ProductResponse
 from .users import UserCreate, UserResponse, Token, UserRoleUpdate
 from .categories import CategoryCreate, CategoryResponse
 from .cart import CartItemCreate, CartItemUpdate, CartItemResponse
+from .orders import (
+    OrderItemResponse,
+    OrderResponse,
+    OrderStatusUpdate,
+)
 
 __all__ = [
     "ProductCreate",
@@ -14,5 +19,8 @@ __all__ = [
     "CategoryResponse",
     "CartItemCreate",
     "CartItemUpdate",
-    "CartItemResponse"
+    "CartItemResponse",
+    "OrderItemResponse",
+    "OrderResponse",
+    "OrderStatusUpdate"
 ]
