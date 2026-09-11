@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Literal
-
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator, Field
 
 
 class OrderItemResponse(BaseModel):
@@ -20,6 +19,10 @@ class OrderCreate(BaseModel):
     address_id: int | None = None
     delivery_method_id: int | None = None
     promo_code: str | None = None
+    customer_note: str | None = Field(
+    default=None,
+    max_length=500
+)
 
     @model_validator(mode="after")
     def validate_shipping_address(self):
@@ -58,6 +61,7 @@ class OrderResponse(BaseModel):
     delivery_method_code: str | None
     delivery_method_name: str | None
     delivery_price: int
+    customer_note: str | None
 
 
 class OrderStatusUpdate(BaseModel):

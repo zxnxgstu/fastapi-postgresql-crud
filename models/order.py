@@ -1,6 +1,7 @@
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, CheckConstraint, func
 from sqlalchemy.orm import relationship
 from database import Base
+from pydantic import BaseModel, Field, model_validator
 
 
 class Order(Base):
@@ -128,4 +129,8 @@ class Order(Base):
 
     delivery_method = relationship(
     "DeliveryMethod"
+)
+    customer_note = Column(
+    String(500),
+    nullable=True
 )

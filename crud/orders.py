@@ -131,7 +131,8 @@ def create_order_from_cart(
         delivery_method_id=delivery_method_id,
         delivery_method_code=delivery_method_code,
         delivery_method_name=delivery_method_name,
-        delivery_price=delivery_price
+        delivery_price=delivery_price,
+        customer_note=order_data.customer_note
     )
 
     db.add(order)

@@ -142,6 +142,20 @@ REST API для управления товарами, созданный на F
 - Orders can be created using a saved address_id
 - Orders can automatically use the user's default address
 - Shipping address data is copied into the order at creation time
+- Delivery methods
+- Public list of active delivery methods
+- Admins can create, update, enable, and disable delivery methods
+- Delivery methods support custom prices
+- Orders can use a selected delivery method
+- Delivery price is included in order total_price
+- Payment amount includes delivery price
+- Orders store delivery method code, name, and price as a snapshot
+- Inactive delivery methods cannot be used for new orders
+- Customer order notes
+- Users can add an optional comment when creating an order
+- Customer notes are stored with the order
+- Notes are limited to 500 characters
+- Invalid oversized notes are rejected with validation error
 
 ## API endpoints
 
@@ -180,4 +194,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 97 automated API tests.
+The project currently includes 108 automated API tests.

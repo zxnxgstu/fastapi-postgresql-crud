@@ -4113,3 +4113,83 @@ def test_payment_includes_delivery_price(admin_headers):
 
     assert payment_response.status_code == 201
     assert payment_response.json()["amount"] == 2000
+
+def test_order_saves_customer_note():
+    headers = create_test_user(
+        "noteuser1",
+        "noteuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Customer Note Product",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        "/orders",
+        json={
+            **SHIPPING_DATA,
+            "customer_note": "Call before delivery"
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 201
+    assert response.json()["customer_note"] == "Call before delivery"
+
+
+def test_customer_note_cannot_exceed_500_characters():
+    headers = create_test_user(
+        "noteuser2",
+        "noteuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Long Note Product",
+            "price": 1200,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        "/orders",
+        json={
+            **SHIPPING_DATA,
+            "customer_note": "a" * 501
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 422
