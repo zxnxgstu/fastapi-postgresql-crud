@@ -194,3 +194,31 @@ def restock_product(
     db.refresh(product)
 
     return product
+
+def adjust_product_stock(
+    db: Session,
+    product: Product,
+    quantity_change: int,
+    reason: str
+):
+    new_quantity = product.stock_quantity + quantity_change
+
+    if new_quantity < 0:
+        raise ValueError(
+            "Stock quantity cannot be negative"
+        )
+
+    product.stock_quantity = new_quantity
+    product.in_stock = new_quantity > 0
+
+    create_stock_movement(
+        db=db,
+        product_id=product.id,
+        quantity_change=quantity_change,
+        reason=reason
+    )
+
+    db.commit()
+    db.refresh(product)
+
+    return product

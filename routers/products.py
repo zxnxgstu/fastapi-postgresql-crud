@@ -10,6 +10,7 @@ from schemas import (
     PriceHistoryResponse,
     StockMovementResponse,
     RestockRequest,
+    StockAdjustmentRequest,
 )
 
 
@@ -203,3 +204,37 @@ def restock_product(
         product=product,
         quantity=restock_data.quantity
     )
+
+@router.post(
+    "/{product_id}/adjust-stock",
+    response_model=ProductResponse
+)
+def adjust_product_stock(
+    product_id: int,
+    adjustment_data: StockAdjustmentRequest,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin)
+):
+    product = crud.get_product(
+        db,
+        product_id
+    )
+
+    if product is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found"
+        )
+
+    try:
+        return crud.adjust_product_stock(
+            db=db,
+            product=product,
+            quantity_change=adjustment_data.quantity_change,
+            reason=adjustment_data.reason
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc)
+        )

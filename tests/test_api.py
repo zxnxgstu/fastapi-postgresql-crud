@@ -6851,3 +6851,162 @@ def test_restock_creates_stock_movement(admin_headers):
     assert len(history) == 1
     assert history[0]["quantity_change"] == 6
     assert history[0]["reason"] == "restock"
+
+def test_admin_can_adjust_product_stock(admin_headers):
+    headers = create_test_user(
+        "stockadjustuser1",
+        "stockadjustuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Stock Adjustment Product 1",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    assert product_response.status_code == 201
+
+    product_id = product_response.json()["id"]
+
+    decrease_response = client.post(
+        f"/products/{product_id}/adjust-stock",
+        json={
+            "quantity_change": -3,
+            "reason": "damaged"
+        },
+        headers=admin_headers
+    )
+
+    assert decrease_response.status_code == 200
+    assert decrease_response.json()["stock_quantity"] == 7
+
+    increase_response = client.post(
+        f"/products/{product_id}/adjust-stock",
+        json={
+            "quantity_change": 2,
+            "reason": "inventory correction"
+        },
+        headers=admin_headers
+    )
+
+    assert increase_response.status_code == 200
+    assert increase_response.json()["stock_quantity"] == 9
+
+
+def test_stock_adjustment_cannot_make_stock_negative(
+    admin_headers
+):
+    headers = create_test_user(
+        "stockadjustuser2",
+        "stockadjustuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Stock Adjustment Product 2",
+            "price": 1600,
+            "in_stock": True,
+            "stock_quantity": 3
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    response = client.post(
+        f"/products/{product_id}/adjust-stock",
+        json={
+            "quantity_change": -4,
+            "reason": "damaged"
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "Stock quantity cannot be negative"
+    )
+
+
+def test_regular_user_cannot_adjust_product_stock():
+    headers = create_test_user(
+        "stockadjustuser3",
+        "stockadjustuser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Stock Adjustment Product 3",
+            "price": 1700,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    response = client.post(
+        f"/products/{product_id}/adjust-stock",
+        json={
+            "quantity_change": -1,
+            "reason": "damaged"
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 403
+
+
+def test_stock_adjustment_creates_stock_movement(
+    admin_headers
+):
+    headers = create_test_user(
+        "stockadjustuser4",
+        "stockadjustuser4@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Stock Adjustment Product 4",
+            "price": 1800,
+            "in_stock": True,
+            "stock_quantity": 8
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    adjustment_response = client.post(
+        f"/products/{product_id}/adjust-stock",
+        json={
+            "quantity_change": -2,
+            "reason": "damaged"
+        },
+        headers=admin_headers
+    )
+
+    assert adjustment_response.status_code == 200
+
+    history_response = client.get(
+        f"/products/{product_id}/stock-movements",
+        headers=admin_headers
+    )
+
+    assert history_response.status_code == 200
+
+    history = history_response.json()
+
+    assert len(history) == 1
+    assert history[0]["quantity_change"] == -2
+    assert history[0]["reason"] == "damaged"
