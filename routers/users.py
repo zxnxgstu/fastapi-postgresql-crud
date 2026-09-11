@@ -354,8 +354,18 @@ def update_me(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    requested_changes = update_data.model_dump(
+        exclude_unset=True
+    )
+
+    changed_fields = [
+        field
+        for field, value in requested_changes.items()
+        if getattr(current_user, field) != value
+    ]
+
     try:
-        return crud.update_user_profile(
+        user = crud.update_user_profile(
             db=db,
             user=current_user,
             update_data=update_data
@@ -365,6 +375,24 @@ def update_me(
             status_code=400,
             detail=str(exc)
         )
+
+    if changed_fields:
+        crud.create_audit_log(
+            db=db,
+            actor_user_id=current_user.id,
+            action="user_profile_updated",
+            entity_type="user",
+            entity_id=current_user.id,
+            details=(
+                "updated_fields: "
+                + ", ".join(changed_fields)
+            )
+        )
+
+    db.commit()
+    db.refresh(user)
+
+    return user
 
 @router.patch("/me/password", status_code=204)
 def change_password(

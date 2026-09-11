@@ -317,6 +317,9 @@ REST API для управления товарами, созданный на F
 - Access tokens remain valid after username changes
 - Refresh tokens remain valid after username changes
 - Refresh token rotation continues to revoke old sessions
+- Audit logging for user profile updates
+- Profile audit logs include changed fields
+- Empty profile updates do not create audit log entries
 
 ## API endpoints
 
@@ -355,4 +358,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 240 automated API tests.
+The project currently includes 242 automated API tests.

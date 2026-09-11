@@ -10951,3 +10951,160 @@ def test_tokens_remain_valid_after_username_change():
 
     assert final_me_response.status_code == 200
     assert final_me_response.json()["username"] == new_username
+
+def test_profile_update_creates_audit_log(admin_headers):
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    username = f"auditprofile_{suffix}"
+    email = f"auditprofile_{suffix}@example.com"
+    password = "password123"
+
+    register_response = client.post(
+        "/register",
+        json={
+            "username": username,
+            "email": email,
+            "password": password
+        }
+    )
+
+    assert register_response.status_code == 201
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": username,
+            "password": password
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = login_response.json()["access_token"]
+
+    user_headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    me_response = client.get(
+        "/me",
+        headers=user_headers
+    )
+
+    assert me_response.status_code == 200
+
+    user_id = me_response.json()["id"]
+
+    new_username = f"auditupdated_{suffix}"
+    new_email = f"auditupdated_{suffix}@example.com"
+
+    update_response = client.patch(
+        "/me",
+        json={
+            "username": new_username,
+            "email": new_email
+        },
+        headers=user_headers
+    )
+
+    assert update_response.status_code == 200
+    assert update_response.json()["username"] == new_username
+    assert update_response.json()["email"] == new_email
+
+    audit_response = client.get(
+        "/admin/audit-logs",
+        params={
+            "action": "user_profile_updated",
+            "entity_type": "user",
+            "entity_id": user_id
+        },
+        headers=admin_headers
+    )
+
+    assert audit_response.status_code == 200
+
+    data = audit_response.json()
+
+    assert len(data) == 1
+
+    audit_log = data[0]
+
+    assert audit_log["action"] == "user_profile_updated"
+    assert audit_log["entity_type"] == "user"
+    assert audit_log["entity_id"] == user_id
+    assert audit_log["actor_user_id"] == user_id
+    assert audit_log["details"] == (
+        "updated_fields: username, email"
+    )
+
+def test_empty_profile_update_does_not_create_audit_log(
+    admin_headers
+):
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    username = f"auditprofileempty_{suffix}"
+    email = f"auditprofileempty_{suffix}@example.com"
+    password = "password123"
+
+    register_response = client.post(
+        "/register",
+        json={
+            "username": username,
+            "email": email,
+            "password": password
+        }
+    )
+
+    assert register_response.status_code == 201
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": username,
+            "password": password
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = login_response.json()["access_token"]
+
+    user_headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    me_response = client.get(
+        "/me",
+        headers=user_headers
+    )
+
+    assert me_response.status_code == 200
+
+    user_id = me_response.json()["id"]
+
+    update_response = client.patch(
+        "/me",
+        json={},
+        headers=user_headers
+    )
+
+    assert update_response.status_code == 200
+    assert update_response.json()["username"] == username
+    assert update_response.json()["email"] == email
+
+    audit_response = client.get(
+        "/admin/audit-logs",
+        params={
+            "action": "user_profile_updated",
+            "entity_type": "user",
+            "entity_id": user_id
+        },
+        headers=admin_headers
+    )
+
+    assert audit_response.status_code == 200
+    assert audit_response.json() == []

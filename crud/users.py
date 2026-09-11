@@ -64,7 +64,4 @@ def update_user_profile(
             value
         )
 
-    db.commit()
-    db.refresh(user)
-
     return user
