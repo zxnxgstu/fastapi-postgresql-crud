@@ -66,12 +66,25 @@ def create_order_from_cart(
 
 def get_user_orders(
     db: Session,
-    user_id: int
+    user_id: int,
+    status: str | None = None,
+    skip: int = 0,
+    limit: int = 10
 ):
+    query = db.query(Order).filter(
+        Order.user_id == user_id
+    )
+
+    if status is not None:
+        query = query.filter(
+            Order.status == status
+        )
+
     return (
-        db.query(Order)
-        .filter(Order.user_id == user_id)
+        query
         .order_by(Order.created_at.desc())
+        .offset(skip)
+        .limit(limit)
         .all()
     )
 
@@ -102,10 +115,24 @@ def get_order(
     )
 
 
-def get_all_orders(db: Session):
+def get_all_orders(
+    db: Session,
+    status: str | None = None,
+    skip: int = 0,
+    limit: int = 10
+):
+    query = db.query(Order)
+
+    if status is not None:
+        query = query.filter(
+            Order.status == status
+        )
+
     return (
-        db.query(Order)
+        query
         .order_by(Order.created_at.desc())
+        .offset(skip)
+        .limit(limit)
         .all()
     )
 

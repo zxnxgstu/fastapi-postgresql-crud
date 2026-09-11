@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-
+from typing import Literal
 import crud
 from dependencies import get_db, get_current_admin, get_current_user
 from models import User
@@ -41,12 +41,24 @@ def create_order(
 
 @router.get("/orders", response_model=list[OrderResponse])
 def get_my_orders(
+    status: Literal[
+        "pending",
+        "paid",
+        "shipped",
+        "completed",
+        "cancelled"
+    ] | None = None,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=10, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     return crud.get_user_orders(
         db,
-        current_user.id
+        current_user.id,
+        status=status,
+        skip=skip,
+        limit=limit
     )
 
 
@@ -73,10 +85,24 @@ def get_my_order(
 
 @router.get("/admin/orders", response_model=list[OrderResponse])
 def get_all_orders(
+    status: Literal[
+        "pending",
+        "paid",
+        "shipped",
+        "completed",
+        "cancelled"
+    ] | None = None,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=10, ge=1, le=100),
     db: Session = Depends(get_db),
     current_admin: User = Depends(get_current_admin)
 ):
-    return crud.get_all_orders(db)
+    return crud.get_all_orders(
+        db,
+        status=status,
+        skip=skip,
+        limit=limit
+    )
 
 
 @router.patch(

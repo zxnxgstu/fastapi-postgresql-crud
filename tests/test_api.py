@@ -1034,3 +1034,106 @@ def test_products_invalid_limit():
     )
 
     assert response.status_code == 422
+
+def test_filter_my_orders_by_status(admin_headers):
+    headers = create_test_user(
+        "orderfilteruser",
+        "orderfilteruser@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Order Filter Product",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    # Первый заказ — оставляем pending
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    pending_order = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    # Второй заказ
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    completed_order = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    completed_order_id = completed_order.json()["id"]
+
+    client.patch(
+        f"/admin/orders/{completed_order_id}/status",
+        json={
+            "status": "completed"
+        },
+        headers=admin_headers
+    )
+
+    response = client.get(
+        "/orders",
+        params={
+            "status": "completed"
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 200
+
+    orders = response.json()
+
+    assert len(orders) == 1
+    assert orders[0]["id"] == completed_order_id
+    assert orders[0]["status"] == "completed"
+
+
+def test_admin_orders_pagination(admin_headers):
+    response = client.get(
+        "/admin/orders",
+        params={
+            "skip": 0,
+            "limit": 1
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+def test_invalid_order_status_filter(auth_headers):
+    response = client.get(
+        "/orders",
+        params={
+            "status": "banana"
+        },
+        headers=auth_headers
+    )
+
+    assert response.status_code == 422
