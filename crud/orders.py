@@ -32,13 +32,14 @@ def create_order_from_cart(
         if product.stock_quantity < cart_item.quantity:
             raise ValueError("Not enough stock")
 
-    total_price = sum(
+    subtotal = sum(
         item.product.price * item.quantity
         for item in cart_items
     )
 
     promo_code = None
     discount_percent = 0
+    discount_amount = 0
 
     if order_data.promo_code:
         promo = (
@@ -53,9 +54,11 @@ def create_order_from_cart(
         promo_code = promo.code
         discount_percent = promo.discount_percent
 
-        total_price = total_price - (
-            total_price * discount_percent // 100
+        discount_amount = (
+            subtotal * discount_percent // 100
         )
+
+    total_price = subtotal - discount_amount
 
     shipping_city = order_data.shipping_city
     shipping_street = order_data.shipping_street
@@ -122,6 +125,8 @@ def create_order_from_cart(
 
     order = Order(
         user_id=user_id,
+        subtotal=subtotal,
+        discount_amount=discount_amount,
         total_price=total_price,
         promo_code=promo_code,
         discount_percent=discount_percent,

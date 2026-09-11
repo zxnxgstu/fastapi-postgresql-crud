@@ -62,6 +62,8 @@ class OrderResponse(BaseModel):
     delivery_method_name: str | None
     delivery_price: int
     customer_note: str | None
+    subtotal: int
+    discount_amount: int
 
 
 class OrderStatusUpdate(BaseModel):

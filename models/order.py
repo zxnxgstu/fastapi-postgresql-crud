@@ -134,3 +134,16 @@ class Order(Base):
     String(500),
     nullable=True
 )
+    subtotal = Column(
+    Integer,
+    nullable=False,
+    default=0,
+    server_default="0"
+)
+
+    discount_amount = Column(
+    Integer,
+    nullable=False,
+    default=0,
+    server_default="0"
+)

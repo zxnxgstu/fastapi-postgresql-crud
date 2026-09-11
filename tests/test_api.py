@@ -4193,3 +4193,208 @@ def test_customer_note_cannot_exceed_500_characters():
     )
 
     assert response.status_code == 422
+
+def test_order_totals_without_discount_or_delivery():
+    headers = create_test_user(
+        "totalsuser1",
+        "totalsuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Totals Product 1",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 2
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    assert response.status_code == 201
+
+    order = response.json()
+
+    assert order["subtotal"] == 3000
+    assert order["discount_percent"] == 0
+    assert order["discount_amount"] == 0
+    assert order["delivery_price"] == 0
+    assert order["total_price"] == 3000
+
+
+def test_order_totals_with_discount_and_delivery(admin_headers):
+    headers = create_test_user(
+        "totalsuser2",
+        "totalsuser2@example.com"
+    )
+
+    promo_response = client.post(
+        "/promo-codes",
+        json={
+            "code": "TOTALS10",
+            "discount_percent": 10,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert promo_response.status_code == 201
+
+    delivery_response = client.post(
+        "/delivery-methods",
+        json={
+            "code": "totals_delivery",
+            "name": "Totals Delivery",
+            "price": 250,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert delivery_response.status_code == 201
+
+    delivery_method_id = delivery_response.json()["id"]
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Totals Product 2",
+            "price": 2000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 2
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        "/orders",
+        json={
+            **SHIPPING_DATA,
+            "promo_code": "TOTALS10",
+            "delivery_method_id": delivery_method_id
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 201
+
+    order = response.json()
+
+    assert order["subtotal"] == 4000
+    assert order["discount_percent"] == 10
+    assert order["discount_amount"] == 400
+    assert order["delivery_price"] == 250
+    assert order["total_price"] == 3850
+
+
+def test_payment_uses_final_order_total(admin_headers):
+    headers = create_test_user(
+        "totalsuser3",
+        "totalsuser3@example.com"
+    )
+
+    promo_response = client.post(
+        "/promo-codes",
+        json={
+            "code": "PAYTOTAL10",
+            "discount_percent": 10,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert promo_response.status_code == 201
+
+    delivery_response = client.post(
+        "/delivery-methods",
+        json={
+            "code": "payment_totals_delivery",
+            "name": "Payment Totals Delivery",
+            "price": 300,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert delivery_response.status_code == 201
+
+    delivery_method_id = delivery_response.json()["id"]
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Totals Product 3",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 2
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json={
+            **SHIPPING_DATA,
+            "promo_code": "PAYTOTAL10",
+            "delivery_method_id": delivery_method_id
+        },
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+
+    order = order_response.json()
+
+    assert order["subtotal"] == 2000
+    assert order["discount_amount"] == 200
+    assert order["delivery_price"] == 300
+    assert order["total_price"] == 2100
+
+    order_id = order["id"]
+
+    payment_response = client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    assert payment_response.status_code == 201
+    assert payment_response.json()["amount"] == 2100

@@ -156,6 +156,13 @@ REST API для управления товарами, созданный на F
 - Customer notes are stored with the order
 - Notes are limited to 500 characters
 - Invalid oversized notes are rejected with validation error
+- Order totals breakdown
+- Orders store subtotal before discounts
+- Discount amount is calculated and stored separately
+- Delivery price is stored separately
+- Final total_price is calculated as subtotal - discount_amount + delivery_price
+- Promo code discounts apply only to product subtotal
+- Payment amount uses the final order total
 
 ## API endpoints
 
@@ -194,4 +201,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 108 automated API tests.
+The project currently includes 111 automated API tests.
