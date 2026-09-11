@@ -255,6 +255,11 @@ REST API для управления товарами, созданный на F
 - Archived products can be restored by admins
 - Restored products become available in the public catalog again
 - Regular users cannot restore archived products
+- Admin promo code management
+- Admin promo code filtering by active status
+- Promo code updates via PATCH
+- Promo code discount, expiration, minimum order amount and usage limit can be updated
+- Regular users cannot access admin promo code management
 
 ## API endpoints
 
@@ -293,4 +298,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 185 automated API tests.
+The project currently includes 190 automated API tests.

@@ -43,6 +43,7 @@ from .promo_codes import (
     get_promo_code_by_id,
     get_promo_code_by_code,
     create_promo_code,
+    update_promo_code,
 )
 
 from .wishlist import (
@@ -192,4 +193,5 @@ __all__ = [
     "adjust_product_stock"
     "get_inventory_summary",
     "restore_product",
+    "update_promo_code",
 ]

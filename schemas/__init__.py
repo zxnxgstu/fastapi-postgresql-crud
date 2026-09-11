@@ -10,7 +10,11 @@ from .orders import (
     ShipmentTrackingUpdate,
     EstimatedDeliveryDateUpdate
 )
-from .promo_codes import PromoCodeCreate, PromoCodeResponse
+from .promo_codes import (
+    PromoCodeCreate,
+    PromoCodeUpdate,
+    PromoCodeResponse,
+)
 from .wishlist import WishlistItemCreate, WishlistItemResponse
 from .reviews import ReviewCreate, ReviewUpdate, ReviewResponse
 from .price_history import PriceHistoryResponse
@@ -89,4 +93,5 @@ __all__ = [
     "RestockRequest",
     "StockAdjustmentRequest",
     "InventorySummaryResponse"
+    "PromoCodeUpdate",
 ]

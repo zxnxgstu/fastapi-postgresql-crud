@@ -8239,3 +8239,172 @@ def test_regular_user_cannot_restore_product(admin_headers):
     )
 
     assert response.status_code == 403
+
+def test_admin_can_view_all_promo_codes(admin_headers):
+    active_response = client.post(
+        "/promo-codes",
+        json={
+            "code": "ADMINPROMOLISTACTIVE",
+            "discount_percent": 10,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    inactive_response = client.post(
+        "/promo-codes",
+        json={
+            "code": "ADMINPROMOLISTINACTIVE",
+            "discount_percent": 20,
+            "active": False
+        },
+        headers=admin_headers
+    )
+
+    assert active_response.status_code == 201
+    assert inactive_response.status_code == 201
+
+    active_id = active_response.json()["id"]
+    inactive_id = inactive_response.json()["id"]
+
+    response = client.get(
+        "/admin/promo-codes?limit=100",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+    ids = [promo["id"] for promo in data]
+
+    assert active_id in ids
+    assert inactive_id in ids
+
+
+def test_admin_can_filter_inactive_promo_codes(admin_headers):
+    promo_response = client.post(
+        "/promo-codes",
+        json={
+            "code": "ADMINPROMOINACTIVEFILTER",
+            "discount_percent": 15,
+            "active": False
+        },
+        headers=admin_headers
+    )
+
+    assert promo_response.status_code == 201
+
+    promo_id = promo_response.json()["id"]
+
+    response = client.get(
+        "/admin/promo-codes?active=false&limit=100",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert any(
+        promo["id"] == promo_id
+        for promo in data
+    )
+
+    assert all(
+        promo["active"] is False
+        for promo in data
+    )
+
+
+def test_admin_can_update_promo_code(admin_headers):
+    promo_response = client.post(
+        "/promo-codes",
+        json={
+            "code": "ADMINPROMOUPDATE",
+            "discount_percent": 10,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert promo_response.status_code == 201
+
+    promo_id = promo_response.json()["id"]
+
+    response = client.patch(
+        f"/admin/promo-codes/{promo_id}",
+        json={
+            "discount_percent": 35,
+            "active": False,
+            "expires_at": "2030-12-31T23:59:59Z",
+            "min_order_amount": 2500,
+            "max_uses": 50
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    promo = response.json()
+
+    assert promo["id"] == promo_id
+    assert promo["code"] == "ADMINPROMOUPDATE"
+    assert promo["discount_percent"] == 35
+    assert promo["active"] is False
+    assert promo["min_order_amount"] == 2500
+    assert promo["max_uses"] == 50
+    assert promo["expires_at"] is not None
+
+
+def test_admin_promo_update_returns_404_for_missing_code(
+    admin_headers
+):
+    response = client.patch(
+        "/admin/promo-codes/999999999",
+        json={
+            "discount_percent": 25
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Promo code not found"
+
+
+def test_regular_user_cannot_manage_admin_promo_codes(
+    admin_headers
+):
+    headers = create_test_user(
+        "adminpromoregularuser",
+        "adminpromoregularuser@example.com"
+    )
+
+    promo_response = client.post(
+        "/promo-codes",
+        json={
+            "code": "ADMINPROMOPROTECTED",
+            "discount_percent": 10,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert promo_response.status_code == 201
+
+    promo_id = promo_response.json()["id"]
+
+    list_response = client.get(
+        "/admin/promo-codes",
+        headers=headers
+    )
+
+    update_response = client.patch(
+        f"/admin/promo-codes/{promo_id}",
+        json={
+            "discount_percent": 50
+        },
+        headers=headers
+    )
+
+    assert list_response.status_code == 403
+    assert update_response.status_code == 403

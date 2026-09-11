@@ -1,13 +1,27 @@
 from sqlalchemy.orm import Session
 
 from models import PromoCode
-from schemas import PromoCodeCreate
+from schemas import PromoCodeCreate, PromoCodeUpdate
 
 
-def get_promo_codes(db: Session):
+def get_promo_codes(
+    db: Session,
+    active: bool | None = None,
+    skip: int = 0,
+    limit: int = 20
+):
+    query = db.query(PromoCode)
+
+    if active is not None:
+        query = query.filter(
+            PromoCode.active == active
+        )
+
     return (
-        db.query(PromoCode)
+        query
         .order_by(PromoCode.id.asc())
+        .offset(skip)
+        .limit(limit)
         .all()
     )
 
@@ -53,3 +67,25 @@ def create_promo_code(
     db.refresh(db_promo_code)
 
     return db_promo_code
+
+
+def update_promo_code(
+    db: Session,
+    promo_code: PromoCode,
+    update_data: PromoCodeUpdate
+):
+    changes = update_data.model_dump(
+        exclude_unset=True
+    )
+
+    for field, value in changes.items():
+        setattr(
+            promo_code,
+            field,
+            value
+        )
+
+    db.commit()
+    db.refresh(promo_code)
+
+    return promo_code
