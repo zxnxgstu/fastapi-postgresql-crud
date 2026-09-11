@@ -18,6 +18,7 @@ from schemas import (
     TopProductResponse,
     DailySalesResponse,
     OrderStatusStatsResponse,
+    LowStockProductResponse,
 )
 from dependencies import (
     get_current_admin,
@@ -548,3 +549,17 @@ def get_admin_orders_by_status(
     current_admin: User = Depends(get_current_admin)
 ):
     return crud.get_orders_by_status(db)
+
+@router.get(
+    "/admin/inventory/low-stock",
+    response_model=list[LowStockProductResponse]
+)
+def get_admin_low_stock_products(
+    threshold: int = 5,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin)
+):
+    return crud.get_low_stock_products(
+        db=db,
+        threshold=threshold
+    )

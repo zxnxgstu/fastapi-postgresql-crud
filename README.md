@@ -212,6 +212,9 @@ REST API для управления товарами, созданный на F
 - Order status statistics for admins
 - Orders are grouped by status
 - Admins can view the number of pending, paid, shipped, completed, and cancelled orders
+- Low stock inventory monitoring for admins
+- Admins can filter products by stock threshold
+- Low stock products are sorted by remaining quantity
 
 ## API endpoints
 
@@ -250,4 +253,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 143 automated API tests.
+The project currently includes 146 automated API tests.

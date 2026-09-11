@@ -131,3 +131,28 @@ def get_orders_by_status(db: Session):
         }
         for row in rows
     ]
+
+def get_low_stock_products(
+    db: Session,
+    threshold: int = 5
+):
+    products = (
+        db.query(Product)
+        .filter(
+            Product.stock_quantity <= threshold
+        )
+        .order_by(
+            Product.stock_quantity.asc(),
+            Product.id.asc()
+        )
+        .all()
+    )
+
+    return [
+        {
+            "product_id": product.id,
+            "name": product.name,
+            "stock_quantity": product.stock_quantity,
+        }
+        for product in products
+    ]

@@ -6400,3 +6400,97 @@ def test_orders_by_status_pending_count_increases(
     )
 
     assert final_pending == initial_pending + 1
+
+def test_admin_can_view_low_stock_products(admin_headers):
+    response = client.get(
+        "/admin/inventory/low-stock?threshold=5",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+def test_regular_user_cannot_view_low_stock_products():
+    headers = create_test_user(
+        "lowstockuser1",
+        "lowstockuser1@example.com"
+    )
+
+    response = client.get(
+        "/admin/inventory/low-stock?threshold=5",
+        headers=headers
+    )
+
+    assert response.status_code == 403
+
+
+def test_low_stock_products_are_filtered_and_sorted(
+    admin_headers
+):
+    headers = create_test_user(
+        "lowstockuser2",
+        "lowstockuser2@example.com"
+    )
+
+    product1_response = client.post(
+        "/products",
+        json={
+            "name": "Low Stock Product A",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 2
+        },
+        headers=headers
+    )
+
+    product2_response = client.post(
+        "/products",
+        json={
+            "name": "Low Stock Product B",
+            "price": 1200,
+            "in_stock": True,
+            "stock_quantity": 4
+        },
+        headers=headers
+    )
+
+    product3_response = client.post(
+        "/products",
+        json={
+            "name": "Enough Stock Product",
+            "price": 1400,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product1_id = product1_response.json()["id"]
+    product2_id = product2_response.json()["id"]
+    product3_id = product3_response.json()["id"]
+
+    response = client.get(
+        "/admin/inventory/low-stock?threshold=5",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    ids = [item["product_id"] for item in data]
+
+    assert product1_id in ids
+    assert product2_id in ids
+    assert product3_id not in ids
+
+    filtered = [
+        item
+        for item in data
+        if item["product_id"] in {product1_id, product2_id}
+    ]
+
+    assert len(filtered) == 2
+    assert filtered[0]["stock_quantity"] == 2
+    assert filtered[1]["stock_quantity"] == 4
