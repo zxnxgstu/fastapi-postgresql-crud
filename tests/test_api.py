@@ -6152,3 +6152,143 @@ def test_top_products_are_sorted_by_units_sold_and_limited(
     assert data[0]["product_name"] == "Top Product A"
     assert data[0]["units_sold"] == 3
     assert data[0]["revenue"] == 3000
+
+def test_admin_can_view_sales_by_day(admin_headers):
+    response = client.get(
+        "/admin/stats/sales-by-day?days=7",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+def test_regular_user_cannot_view_sales_by_day():
+    headers = create_test_user(
+        "salesbydayuser1",
+        "salesbydayuser1@example.com"
+    )
+
+    response = client.get(
+        "/admin/stats/sales-by-day?days=7",
+        headers=headers
+    )
+
+    assert response.status_code == 403
+
+
+def test_sales_by_day_counts_completed_order(
+    admin_headers
+):
+    initial_response = client.get(
+        "/admin/stats/sales-by-day?days=1",
+        headers=admin_headers
+    )
+
+    assert initial_response.status_code == 200
+
+    initial_data = initial_response.json()
+
+    initial_orders = sum(
+        item["orders"]
+        for item in initial_data
+    )
+
+    initial_revenue = sum(
+        item["revenue"]
+        for item in initial_data
+    )
+
+    headers = create_test_user(
+        "salesbydayuser2",
+        "salesbydayuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Daily Sales Product",
+            "price": 2300,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    assert product_response.status_code == 201
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+
+    order = order_response.json()
+    order_id = order["id"]
+    order_total = order["total_price"]
+
+    client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    shipped_response = client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "shipped"
+        },
+        headers=admin_headers
+    )
+
+    assert shipped_response.status_code == 200
+
+    advance_shipment_to_out_for_delivery(
+        order_id,
+        admin_headers
+    )
+
+    delivered_response = client.post(
+        f"/admin/orders/{order_id}/shipment-events",
+        json={
+            "status": "delivered",
+            "comment": "Delivered for daily sales"
+        },
+        headers=admin_headers
+    )
+
+    assert delivered_response.status_code == 201
+
+    final_response = client.get(
+        "/admin/stats/sales-by-day?days=1",
+        headers=admin_headers
+    )
+
+    assert final_response.status_code == 200
+
+    final_data = final_response.json()
+
+    final_orders = sum(
+        item["orders"]
+        for item in final_data
+    )
+
+    final_revenue = sum(
+        item["revenue"]
+        for item in final_data
+    )
+
+    assert final_orders == initial_orders + 1
+    assert final_revenue == initial_revenue + order_total

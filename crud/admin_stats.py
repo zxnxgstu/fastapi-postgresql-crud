@@ -1,6 +1,6 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-
+from datetime import date, timedelta
 from models import Order, OrderItem, Product, User
 
 
@@ -75,6 +75,39 @@ def get_top_products(
             "product_id": row.product_id,
             "product_name": row.product_name,
             "units_sold": row.units_sold,
+            "revenue": row.revenue,
+        }
+        for row in rows
+    ]
+
+def get_sales_by_day(
+    db: Session,
+    days: int = 7
+):
+    start_date = date.today() - timedelta(days=days - 1)
+
+    delivery_date = func.date(Order.delivered_at)
+
+    rows = (
+        db.query(
+            delivery_date.label("date"),
+            func.count(Order.id).label("orders"),
+            func.sum(Order.total_price).label("revenue"),
+        )
+        .filter(
+            Order.status == "completed",
+            Order.delivered_at.is_not(None),
+            delivery_date >= start_date
+        )
+        .group_by(delivery_date)
+        .order_by(delivery_date.asc())
+        .all()
+    )
+
+    return [
+        {
+            "date": row.date,
+            "orders": row.orders,
             "revenue": row.revenue,
         }
         for row in rows

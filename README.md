@@ -205,6 +205,10 @@ REST API для управления товарами, созданный на F
 - Products are ranked by total units sold
 - Revenue is calculated from completed orders
 - Results can be limited with the limit query parameter
+- Daily sales statistics for admins
+- Completed orders are grouped by delivery date
+- Revenue and order count are calculated per day
+- The number of days can be controlled with the days query parameter
 
 ## API endpoints
 
@@ -243,4 +247,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 137 automated API tests.
+The project currently includes 140 automated API tests.
