@@ -5307,6 +5307,50 @@ def test_user_cannot_view_another_users_shipment_events(
     assert response.status_code == 404
     assert response.json()["detail"] == "Order not found"
 
+def advance_shipment_to_out_for_delivery(
+    order_id: int,
+    admin_headers
+):
+    statuses = [
+        "picked_up",
+        "in_transit",
+        "out_for_delivery",
+    ]
+
+    for status in statuses:
+        response = client.post(
+            f"/admin/orders/{order_id}/shipment-events",
+            json={
+                "status": status,
+                "comment": f"Shipment status: {status}"
+            },
+            headers=admin_headers
+        )
+
+        assert response.status_code == 201
+
+def advance_shipment_to_out_for_delivery(
+    order_id: int,
+    admin_headers
+):
+    statuses = [
+        "picked_up",
+        "in_transit",
+        "out_for_delivery",
+    ]
+
+    for status in statuses:
+        response = client.post(
+            f"/admin/orders/{order_id}/shipment-events",
+            json={
+                "status": status,
+                "comment": f"Shipment status: {status}"
+            },
+            headers=admin_headers
+        )
+
+        assert response.status_code == 201
+
 def test_delivered_shipment_event_completes_order(
     admin_headers
 ):
@@ -5355,14 +5399,19 @@ def test_delivered_shipment_event_completes_order(
     assert payment_response.status_code == 201
 
     shipped_response = client.patch(
-        f"/admin/orders/{order_id}/status",
-        json={
-            "status": "shipped"
-        },
-        headers=admin_headers
-    )
+    f"/admin/orders/{order_id}/status",
+    json={
+        "status": "shipped"
+    },
+    headers=admin_headers
+)
 
     assert shipped_response.status_code == 200
+
+    advance_shipment_to_out_for_delivery(
+        order_id,
+        admin_headers
+    )
 
     delivered_response = client.post(
         f"/admin/orders/{order_id}/shipment-events",
@@ -5446,6 +5495,10 @@ def test_delivered_shipment_event_cannot_be_added_twice(
         },
         headers=admin_headers
     )
+    advance_shipment_to_out_for_delivery(
+    order_id,
+    admin_headers
+)
 
     first_response = client.post(
         f"/admin/orders/{order_id}/shipment-events",
@@ -5524,6 +5577,10 @@ def test_shipment_event_cannot_be_added_after_delivery(
         },
         headers=admin_headers
     )
+    advance_shipment_to_out_for_delivery(
+    order_id,
+    admin_headers
+)
 
     delivered_response = client.post(
         f"/admin/orders/{order_id}/shipment-events",
@@ -5549,4 +5606,225 @@ def test_shipment_event_cannot_be_added_after_delivery(
     assert (
         response.json()["detail"]
         == "Shipment events can only be added to shipped orders"
+    )
+
+def test_first_shipment_event_must_be_picked_up(admin_headers):
+    headers = create_test_user(
+        "shipmenttransitionuser1",
+        "shipmenttransitionuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Shipment Transition Product 1",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={"status": "shipped"},
+        headers=admin_headers
+    )
+
+    response = client.post(
+        f"/admin/orders/{order_id}/shipment-events",
+        json={
+            "status": "in_transit",
+            "comment": "Invalid first event"
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "Invalid shipment status transition"
+    )
+
+
+def test_shipment_event_cannot_skip_status(admin_headers):
+    headers = create_test_user(
+        "shipmenttransitionuser2",
+        "shipmenttransitionuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Shipment Transition Product 2",
+            "price": 1600,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={"status": "shipped"},
+        headers=admin_headers
+    )
+
+    first_response = client.post(
+        f"/admin/orders/{order_id}/shipment-events",
+        json={
+            "status": "picked_up",
+            "comment": "Picked up"
+        },
+        headers=admin_headers
+    )
+
+    assert first_response.status_code == 201
+
+    response = client.post(
+        f"/admin/orders/{order_id}/shipment-events",
+        json={
+            "status": "out_for_delivery",
+            "comment": "Skipped in_transit"
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "Invalid shipment status transition"
+    )
+
+
+def test_shipment_event_cannot_go_backwards(admin_headers):
+    headers = create_test_user(
+        "shipmenttransitionuser3",
+        "shipmenttransitionuser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Shipment Transition Product 3",
+            "price": 1700,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={"status": "shipped"},
+        headers=admin_headers
+    )
+
+    first_response = client.post(
+        f"/admin/orders/{order_id}/shipment-events",
+        json={
+            "status": "picked_up",
+            "comment": "Picked up"
+        },
+        headers=admin_headers
+    )
+
+    assert first_response.status_code == 201
+
+    second_response = client.post(
+        f"/admin/orders/{order_id}/shipment-events",
+        json={
+            "status": "in_transit",
+            "comment": "In transit"
+        },
+        headers=admin_headers
+    )
+
+    assert second_response.status_code == 201
+
+    response = client.post(
+        f"/admin/orders/{order_id}/shipment-events",
+        json={
+            "status": "picked_up",
+            "comment": "Trying to go backwards"
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "Invalid shipment status transition"
     )

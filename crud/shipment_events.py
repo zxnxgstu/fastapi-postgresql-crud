@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
-from .order_status_history import create_order_status_history
+
 from models import Order, ShipmentEvent
 from schemas import ShipmentEventCreate
+
+from .order_status_history import create_order_status_history
 
 
 def get_order_shipment_events(
@@ -29,6 +31,36 @@ def create_shipment_event(
     if order.status != "shipped":
         raise ValueError(
             "Shipment events can only be added to shipped orders"
+        )
+
+    last_event = (
+        db.query(ShipmentEvent)
+        .filter(ShipmentEvent.order_id == order.id)
+        .order_by(
+            ShipmentEvent.created_at.desc(),
+            ShipmentEvent.id.desc()
+        )
+        .first()
+    )
+
+    allowed_transitions = {
+        None: "picked_up",
+        "picked_up": "in_transit",
+        "in_transit": "out_for_delivery",
+        "out_for_delivery": "delivered",
+    }
+
+    current_status = (
+        last_event.status
+        if last_event is not None
+        else None
+    )
+
+    expected_status = allowed_transitions.get(current_status)
+
+    if event_data.status != expected_status:
+        raise ValueError(
+            "Invalid shipment status transition"
         )
 
     event = ShipmentEvent(

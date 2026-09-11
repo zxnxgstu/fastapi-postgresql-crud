@@ -192,6 +192,9 @@ REST API для управления товарами, созданный на F
 - Shipment tracking history
 - Every tracking update is stored in history
 - Users can view tracking history only for their own orders
+- Shipment events follow a strict status sequence
+- Valid sequence: picked_up -> in_transit -> out_for_delivery -> delivered
+- Skipping statuses or moving backwards is rejected
 
 ## API endpoints
 
@@ -230,4 +233,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 128 automated API tests.
+The project currently includes 131 automated API tests.
