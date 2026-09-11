@@ -29,6 +29,7 @@ from .orders import (
     get_order,
     get_all_orders,
     update_order_status,
+    cancel_order,
 )
 
 from .promo_codes import (
@@ -62,4 +63,7 @@ __all__ = [
     "get_cart_item_by_product",
     "get_promo_codes",
     "get_promo_code_by_id",
+    "get_promo_code_by_code",
+    "create_promo_code",
+    "cancel_order"
 ]

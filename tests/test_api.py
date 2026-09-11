@@ -1371,3 +1371,261 @@ def test_inactive_promo_code_cannot_be_used(admin_headers):
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Invalid promo code"
+
+def test_cancel_order_restores_stock():
+    headers = create_test_user(
+        "canceluser1",
+        "canceluser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Cancel Stock Product",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 2
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    product_after_order = client.get(
+        f"/products/{product_id}"
+    ).json()
+
+    assert product_after_order["stock_quantity"] == 3
+
+    cancel_response = client.post(
+        f"/orders/{order_id}/cancel",
+        headers=headers
+    )
+
+    assert cancel_response.status_code == 200
+    assert cancel_response.json()["status"] == "cancelled"
+
+    product_after_cancel = client.get(
+        f"/products/{product_id}"
+    ).json()
+
+    assert product_after_cancel["stock_quantity"] == 5
+    assert product_after_cancel["in_stock"] is True
+
+
+def test_cannot_cancel_order_twice():
+    headers = create_test_user(
+        "canceluser2",
+        "canceluser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Cancel Twice Product",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    client.post(
+        f"/orders/{order_id}/cancel",
+        headers=headers
+    )
+
+    response = client.post(
+        f"/orders/{order_id}/cancel",
+        headers=headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Order already cancelled"
+
+
+def test_user_cannot_cancel_completed_order(admin_headers):
+    headers = create_test_user(
+        "canceluser3",
+        "canceluser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Completed Order Product",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "completed"
+        },
+        headers=admin_headers
+    )
+
+    response = client.post(
+        f"/orders/{order_id}/cancel",
+        headers=headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Completed order cannot be cancelled"
+
+def test_admin_can_cancel_order(admin_headers):
+    headers = create_test_user(
+        "admincanceluser1",
+        "admincanceluser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Admin Cancel Product",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 2
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    response = client.post(
+        f"/admin/orders/{order_id}/cancel",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "cancelled"
+
+    product_response = client.get(
+        f"/products/{product_id}"
+    )
+
+    assert product_response.json()["stock_quantity"] == 5
+
+
+def test_admin_cannot_cancel_order_via_status_patch(admin_headers):
+    headers = create_test_user(
+        "admincanceluser2",
+        "admincanceluser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Admin Patch Cancel Product",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    response = client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={
+            "status": "cancelled"
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Use cancel endpoint to cancel orders"

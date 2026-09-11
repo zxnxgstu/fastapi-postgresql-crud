@@ -125,9 +125,76 @@ def update_order_status(
             status_code=404,
             detail="Order not found"
         )
-
+    if status_data.status == "cancelled":
+        raise HTTPException(
+        status_code=400,
+        detail="Use cancel endpoint to cancel orders"
+    )
     return crud.update_order_status(
         db,
         order,
         status_data
     )
+
+@router.post(
+    "/orders/{order_id}/cancel",
+    response_model=OrderResponse
+)
+def cancel_my_order(
+    order_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    order = crud.get_user_order(
+    db,
+    order_id,
+    current_user.id
+    )
+
+    if order is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Order not found"
+        )
+
+    try:
+        return crud.cancel_order(
+            db,
+            order
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc)
+        )
+
+@router.post(
+    "/admin/orders/{order_id}/cancel",
+    response_model=OrderResponse
+)
+def cancel_order_by_admin(
+    order_id: int,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin)
+):
+    order = crud.get_order(
+        db,
+        order_id
+    )
+
+    if order is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Order not found"
+        )
+
+    try:
+        return crud.cancel_order(
+            db,
+            order
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc)
+        )

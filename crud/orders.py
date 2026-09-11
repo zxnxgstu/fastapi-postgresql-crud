@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from models import CartItem, Order, OrderItem, PromoCode
+from models import CartItem, Order, OrderItem, Product, PromoCode
 from schemas import OrderCreate, OrderStatusUpdate
 
 
@@ -164,6 +164,37 @@ def update_order_status(
     status_data: OrderStatusUpdate
 ):
     order.status = status_data.status
+
+    db.commit()
+    db.refresh(order)
+
+    return order
+
+def cancel_order(
+    db: Session,
+    order: Order
+):
+    if order.status == "cancelled":
+        raise ValueError("Order already cancelled")
+
+    if order.status == "completed":
+        raise ValueError("Completed order cannot be cancelled")
+
+    for order_item in order.items:
+        if order_item.product_id is None:
+            continue
+
+        product = (
+            db.query(Product)
+            .filter(Product.id == order_item.product_id)
+            .first()
+        )
+
+        if product is not None:
+            product.stock_quantity += order_item.quantity
+            product.in_stock = True
+
+    order.status = "cancelled"
 
     db.commit()
     db.refresh(order)
