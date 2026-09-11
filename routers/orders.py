@@ -13,6 +13,7 @@ from schemas import (
     ShipmentTrackingUpdate,
     ShipmentEventCreate,
     ShipmentEventResponse,
+    ShipmentTrackingHistoryResponse,
 )
 from dependencies import (
     get_current_admin,
@@ -407,6 +408,33 @@ def update_order_estimated_delivery_date(
             status_code=400,
             detail=str(exc)
         )
+
+@router.get(
+    "/orders/{order_id}/tracking-history",
+    response_model=list[ShipmentTrackingHistoryResponse]
+)
+def get_order_tracking_history(
+    order_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    order = crud.get_user_order(
+        db,
+        order_id,
+        current_user.id
+    )
+
+    if order is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Order not found"
+        )
+
+    return crud.get_shipment_tracking_history(
+        db,
+        order.id
+    )
+    
 @router.get(
     "/orders/{order_id}/shipment-events",
     response_model=list[ShipmentEventResponse]

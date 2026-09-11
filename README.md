@@ -189,6 +189,9 @@ REST API для управления товарами, созданный на F
 - The shipped -> completed transition is stored in order status history
 - Duplicate delivered events are rejected
 - Shipment events cannot be added after an order is completed
+- Shipment tracking history
+- Every tracking update is stored in history
+- Users can view tracking history only for their own orders
 
 ## API endpoints
 
@@ -227,4 +230,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 125 automated API tests.
+The project currently includes 128 automated API tests.

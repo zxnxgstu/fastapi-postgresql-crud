@@ -95,6 +95,10 @@ from .shipment_events import (
     get_order_shipment_events,
     create_shipment_event,
 )
+from .shipment_tracking_history import (
+    create_shipment_tracking_history,
+    get_shipment_tracking_history,
+)
 
 __all__ = [
     "get_products",
@@ -157,4 +161,6 @@ __all__ = [
     "update_estimated_delivery_date"
     "get_order_shipment_events",
     "create_shipment_event",
+    "create_shipment_tracking_history",
+    "get_shipment_tracking_history"
 ]

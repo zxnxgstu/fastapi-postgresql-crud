@@ -166,3 +166,9 @@ class Order(Base):
     cascade="all, delete-orphan",
     order_by="ShipmentEvent.created_at"
 )
+    tracking_history = relationship(
+    "ShipmentTrackingHistory",
+    back_populates="order",
+    cascade="all, delete-orphan",
+    order_by="ShipmentTrackingHistory.created_at"
+)

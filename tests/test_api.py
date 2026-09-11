@@ -4614,6 +4614,238 @@ def test_user_cannot_add_order_tracking():
 
     assert response.status_code == 403
 
+def test_tracking_history_records_first_tracking_update(admin_headers):
+    headers = create_test_user(
+        "trackinghistoryuser1",
+        "trackinghistoryuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Tracking History Product 1",
+            "price": 1400,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={"status": "shipped"},
+        headers=admin_headers
+    )
+
+    tracking_response = client.patch(
+        f"/admin/orders/{order_id}/tracking",
+        json={
+            "shipping_carrier": "Nova Poshta",
+            "tracking_number": "TRACK-HISTORY-001"
+        },
+        headers=admin_headers
+    )
+
+    assert tracking_response.status_code == 200
+
+    history_response = client.get(
+        f"/orders/{order_id}/tracking-history",
+        headers=headers
+    )
+
+    assert history_response.status_code == 200
+
+    history = history_response.json()
+
+    assert len(history) == 1
+    assert history[0]["order_id"] == order_id
+    assert history[0]["shipping_carrier"] == "Nova Poshta"
+    assert history[0]["tracking_number"] == "TRACK-HISTORY-001"
+    assert "created_at" in history[0]
+
+
+def test_tracking_history_records_tracking_replacement(admin_headers):
+    headers = create_test_user(
+        "trackinghistoryuser2",
+        "trackinghistoryuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Tracking History Product 2",
+            "price": 1600,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    client.post(
+        f"/orders/{order_id}/pay",
+        headers=headers
+    )
+
+    client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={"status": "shipped"},
+        headers=admin_headers
+    )
+
+    first_response = client.patch(
+        f"/admin/orders/{order_id}/tracking",
+        json={
+            "shipping_carrier": "Nova Poshta",
+            "tracking_number": "TRACK-HISTORY-OLD"
+        },
+        headers=admin_headers
+    )
+
+    assert first_response.status_code == 200
+
+    second_response = client.patch(
+        f"/admin/orders/{order_id}/tracking",
+        json={
+            "shipping_carrier": "Ukrposhta",
+            "tracking_number": "TRACK-HISTORY-NEW"
+        },
+        headers=admin_headers
+    )
+
+    assert second_response.status_code == 200
+    assert second_response.json()["shipping_carrier"] == "Ukrposhta"
+    assert second_response.json()["tracking_number"] == "TRACK-HISTORY-NEW"
+
+    history_response = client.get(
+        f"/orders/{order_id}/tracking-history",
+        headers=headers
+    )
+
+    assert history_response.status_code == 200
+
+    history = history_response.json()
+
+    assert len(history) == 2
+
+    assert history[0]["shipping_carrier"] == "Nova Poshta"
+    assert history[0]["tracking_number"] == "TRACK-HISTORY-OLD"
+
+    assert history[1]["shipping_carrier"] == "Ukrposhta"
+    assert history[1]["tracking_number"] == "TRACK-HISTORY-NEW"
+
+
+def test_user_cannot_view_another_users_tracking_history(admin_headers):
+    owner_headers = create_test_user(
+        "trackinghistoryowner",
+        "trackinghistoryowner@example.com"
+    )
+
+    other_headers = create_test_user(
+        "trackinghistoryother",
+        "trackinghistoryother@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Tracking History Private Product",
+            "price": 1800,
+            "in_stock": True,
+            "stock_quantity": 5
+        },
+        headers=owner_headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=owner_headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json=SHIPPING_DATA,
+        headers=owner_headers
+    )
+
+    order_id = order_response.json()["id"]
+
+    client.post(
+        f"/orders/{order_id}/pay",
+        headers=owner_headers
+    )
+
+    client.patch(
+        f"/admin/orders/{order_id}/status",
+        json={"status": "shipped"},
+        headers=admin_headers
+    )
+
+    client.patch(
+        f"/admin/orders/{order_id}/tracking",
+        json={
+            "shipping_carrier": "Nova Poshta",
+            "tracking_number": "TRACK-PRIVATE-001"
+        },
+        headers=admin_headers
+    )
+
+    response = client.get(
+        f"/orders/{order_id}/tracking-history",
+        headers=other_headers
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Order not found"
+
 def test_admin_can_set_estimated_delivery_date_for_shipped_order(
     admin_headers
 ):

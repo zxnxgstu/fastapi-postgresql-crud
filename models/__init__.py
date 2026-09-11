@@ -14,6 +14,7 @@ from .order_status_history import OrderStatusHistory
 from .address import Address
 from .delivery_method import DeliveryMethod
 from .shipment_event import ShipmentEvent
+from .shipment_tracking_history import ShipmentTrackingHistory
 
 __all__ = [
     "CartItem",
@@ -33,4 +34,5 @@ __all__ = [
     "Address"
     "DeliveryMethod"
     "ShipmentEvent",
+    "ShipmentTrackingHistory"
 ]

@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from .order_status_history import create_order_status_history
+from .shipment_tracking_history import create_shipment_tracking_history
 from models import (
     Address,
     CartItem,
@@ -345,10 +346,18 @@ def update_shipment_tracking(
     order.shipping_carrier = shipping_carrier
     order.tracking_number = tracking_number
 
+    create_shipment_tracking_history(
+        db=db,
+        order_id=order.id,
+        shipping_carrier=shipping_carrier,
+        tracking_number=tracking_number
+    )
+
     db.commit()
     db.refresh(order)
 
     return order
+
 def update_estimated_delivery_date(
     db: Session,
     order: Order,

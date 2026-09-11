@@ -31,6 +31,7 @@ from .shipment_events import (
     ShipmentEventCreate,
     ShipmentEventResponse,
 )
+from .shipment_tracking_history import ShipmentTrackingHistoryResponse
 
 __all__ = [
     "ProductCreate",
@@ -69,4 +70,5 @@ __all__ = [
     "EstimatedDeliveryDateUpdate",
     "ShipmentEventCreate",
     "ShipmentEventResponse"
+    "ShipmentTrackingHistoryResponse",
 ]
