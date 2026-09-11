@@ -1,4 +1,10 @@
-from sqlalchemy import Boolean, Column, Integer, String
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Integer,
+    String,
+)
 
 from database import Base
 
@@ -24,4 +30,26 @@ class PromoCode(Base):
         Boolean,
         nullable=False,
         server_default="true"
+    )
+
+    expires_at = Column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
+    min_order_amount = Column(
+        Integer,
+        nullable=False,
+        server_default="0"
+    )
+
+    max_uses = Column(
+        Integer,
+        nullable=True
+    )
+
+    used_count = Column(
+        Integer,
+        nullable=False,
+        server_default="0"
     )

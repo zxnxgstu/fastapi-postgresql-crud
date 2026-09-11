@@ -240,6 +240,11 @@ REST API для управления товарами, созданный на F
 - Archived products cannot be opened or added to the cart
 - Orders cannot be created with archived products
 - Product history remains stored in the database after archiving
+- Promo code expiration dates
+- Minimum order amount requirements for promo codes
+- Promo code usage limits
+- Promo code usage counter
+- Unlimited promo codes remain supported
 
 ## API endpoints
 
@@ -278,4 +283,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 170 automated API tests.
+The project currently includes 175 automated API tests.

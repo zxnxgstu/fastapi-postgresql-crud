@@ -12,7 +12,7 @@ from models import (
 )
 from schemas import OrderCreate, OrderStatusUpdate
 from .stock_movements import create_stock_movement
-
+from datetime import datetime, timezone
 
 def create_order_from_cart(
     db: Session,
@@ -42,6 +42,7 @@ def create_order_from_cart(
         for item in cart_items
     )
 
+    promo = None
     promo_code = None
     discount_percent = 0
     discount_amount = 0
@@ -55,6 +56,21 @@ def create_order_from_cart(
 
         if promo is None or not promo.active:
             raise ValueError("Invalid promo code")
+
+        if (
+            promo.expires_at is not None
+            and promo.expires_at <= datetime.now(timezone.utc)
+        ):
+            raise ValueError("Promo code expired")
+
+        if subtotal < promo.min_order_amount:
+            raise ValueError("Minimum order amount not reached")
+
+        if (
+            promo.max_uses is not None
+            and promo.used_count >= promo.max_uses
+        ):
+            raise ValueError("Promo code usage limit reached")
 
         promo_code = promo.code
         discount_percent = promo.discount_percent
@@ -180,6 +196,9 @@ def create_order_from_cart(
     
     for cart_item in cart_items:
         db.delete(cart_item)
+
+    if promo is not None:
+        promo.used_count += 1
 
     db.commit()
     db.refresh(order)

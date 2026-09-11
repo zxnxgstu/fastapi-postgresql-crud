@@ -41,7 +41,11 @@ def create_promo_code(
     db_promo_code = PromoCode(
         code=promo_code.code,
         discount_percent=promo_code.discount_percent,
-        active=promo_code.active
+        active=promo_code.active,
+        expires_at=promo_code.expires_at,
+        min_order_amount=promo_code.min_order_amount,
+        max_uses=promo_code.max_uses,
+        used_count=0
     )
 
     db.add(db_promo_code)

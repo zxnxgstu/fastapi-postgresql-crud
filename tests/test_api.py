@@ -7454,3 +7454,332 @@ def test_order_cannot_be_created_with_archived_product(admin_headers):
         order_response.json()["detail"]
         == "Product is no longer available"
     )
+
+def test_expired_promo_code_cannot_be_used(admin_headers):
+    headers = create_test_user(
+        "promorestrictionuser1",
+        "promorestrictionuser1@example.com"
+    )
+
+    promo_response = client.post(
+        "/promo-codes",
+        json={
+            "code": "EXPIREDPROMO15",
+            "discount_percent": 15,
+            "active": True,
+            "expires_at": "2020-01-01T00:00:00Z"
+        },
+        headers=admin_headers
+    )
+
+    assert promo_response.status_code == 201
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Expired Promo Product",
+            "price": 2000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    cart_response = client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    assert cart_response.status_code == 201
+
+    response = client.post(
+        "/orders",
+        json={
+            **SHIPPING_DATA,
+            "promo_code": "EXPIREDPROMO15"
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Promo code expired"
+
+
+def test_promo_code_requires_minimum_order_amount(admin_headers):
+    headers = create_test_user(
+        "promorestrictionuser2",
+        "promorestrictionuser2@example.com"
+    )
+
+    promo_response = client.post(
+        "/promo-codes",
+        json={
+            "code": "MINIMUMPROMO20",
+            "discount_percent": 20,
+            "active": True,
+            "min_order_amount": 5000
+        },
+        headers=admin_headers
+    )
+
+    assert promo_response.status_code == 201
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Minimum Promo Product",
+            "price": 2000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    cart_response = client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    assert cart_response.status_code == 201
+
+    response = client.post(
+        "/orders",
+        json={
+            **SHIPPING_DATA,
+            "promo_code": "MINIMUMPROMO20"
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "Minimum order amount not reached"
+    )
+
+
+def test_promo_code_usage_limit(admin_headers):
+    first_headers = create_test_user(
+        "promorestrictionuser3",
+        "promorestrictionuser3@example.com"
+    )
+
+    second_headers = create_test_user(
+        "promorestrictionuser4",
+        "promorestrictionuser4@example.com"
+    )
+
+    promo_response = client.post(
+        "/promo-codes",
+        json={
+            "code": "LIMITPROMO25",
+            "discount_percent": 25,
+            "active": True,
+            "max_uses": 1
+        },
+        headers=admin_headers
+    )
+
+    assert promo_response.status_code == 201
+
+    first_product = client.post(
+        "/products",
+        json={
+            "name": "Promo Limit Product One",
+            "price": 4000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=first_headers
+    )
+
+    first_product_id = first_product.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": first_product_id,
+            "quantity": 1
+        },
+        headers=first_headers
+    )
+
+    first_order = client.post(
+        "/orders",
+        json={
+            **SHIPPING_DATA,
+            "promo_code": "LIMITPROMO25"
+        },
+        headers=first_headers
+    )
+
+    assert first_order.status_code == 201
+
+    second_product = client.post(
+        "/products",
+        json={
+            "name": "Promo Limit Product Two",
+            "price": 4000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=second_headers
+    )
+
+    second_product_id = second_product.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": second_product_id,
+            "quantity": 1
+        },
+        headers=second_headers
+    )
+
+    second_order = client.post(
+        "/orders",
+        json={
+            **SHIPPING_DATA,
+            "promo_code": "LIMITPROMO25"
+        },
+        headers=second_headers
+    )
+
+    assert second_order.status_code == 400
+    assert (
+        second_order.json()["detail"]
+        == "Promo code usage limit reached"
+    )
+
+
+def test_promo_code_used_count_increases(admin_headers):
+    headers = create_test_user(
+        "promorestrictionuser5",
+        "promorestrictionuser5@example.com"
+    )
+
+    promo_response = client.post(
+        "/promo-codes",
+        json={
+            "code": "COUNTPROMO10",
+            "discount_percent": 10,
+            "active": True,
+            "max_uses": 5
+        },
+        headers=admin_headers
+    )
+
+    assert promo_response.status_code == 201
+    assert promo_response.json()["used_count"] == 0
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Promo Counter Product",
+            "price": 3000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    order_response = client.post(
+        "/orders",
+        json={
+            **SHIPPING_DATA,
+            "promo_code": "COUNTPROMO10"
+        },
+        headers=headers
+    )
+
+    assert order_response.status_code == 201
+
+    promo_check = client.get(
+        "/promo-codes/COUNTPROMO10"
+    )
+
+    assert promo_check.status_code == 200
+    assert promo_check.json()["used_count"] == 1
+
+
+def test_promo_code_without_restrictions_still_works(admin_headers):
+    headers = create_test_user(
+        "promorestrictionuser6",
+        "promorestrictionuser6@example.com"
+    )
+
+    promo_response = client.post(
+        "/promo-codes",
+        json={
+            "code": "UNLIMITEDPROMO10",
+            "discount_percent": 10,
+            "active": True
+        },
+        headers=admin_headers
+    )
+
+    assert promo_response.status_code == 201
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Unlimited Promo Product",
+            "price": 5000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/cart",
+        json={
+            "product_id": product_id,
+            "quantity": 1
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        "/orders",
+        json={
+            **SHIPPING_DATA,
+            "promo_code": "UNLIMITEDPROMO10"
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 201
+
+    order = response.json()
+
+    assert order["subtotal"] == 5000
+    assert order["discount_amount"] == 500
+    assert order["total_price"] == 4500
+    assert order["promo_code"] == "UNLIMITEDPROMO10"
