@@ -6,7 +6,8 @@ from .users import (
     RefreshTokenRequest,
     UserRoleUpdate,
     RefreshSessionResponse,
-    UserPasswordChange
+    UserPasswordChange,
+    UserActiveUpdate,
 )
 from .categories import CategoryCreate, CategoryResponse
 from .cart import CartItemCreate, CartItemUpdate, CartItemResponse
@@ -104,4 +105,5 @@ __all__ = [
     "PromoCodeUpdate",
     "RefreshSessionResponse",
     "UserPasswordChange",
+    "UserActiveUpdate",
 ]

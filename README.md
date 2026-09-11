@@ -284,6 +284,11 @@ REST API для управления товарами, созданный на F
 - New password must differ from the old password
 - Password change revokes all refresh token sessions
 - Old refresh tokens cannot be used after a password change
+- Admin user account activation and deactivation
+- Disabled users cannot log in
+- Disabled users cannot use existing access tokens
+- Deactivation revokes all refresh token sessions
+- Admins can reactivate disabled accounts
 
 ## API endpoints
 
@@ -322,4 +327,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 209 automated API tests.
+The project currently includes 214 automated API tests.

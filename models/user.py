@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Boolean, Column, Integer, String
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -22,6 +22,12 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
 
     role = Column(String(20), nullable=False, server_default="user")
+    is_active = Column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="true"
+    )
 
     cart_items = relationship(
         "CartItem",

@@ -9269,3 +9269,242 @@ def test_change_password_revokes_refresh_tokens():
         refresh_response.json()["detail"]
         == "Invalid refresh token"
     )
+def test_admin_can_deactivate_user(admin_headers):
+    headers = create_test_user(
+        "deactivateuser1",
+        "deactivateuser1@example.com"
+    )
+
+    me_response = client.get(
+        "/me",
+        headers=headers
+    )
+
+    assert me_response.status_code == 200
+
+    user_id = me_response.json()["id"]
+
+    response = client.patch(
+        f"/users/{user_id}/active",
+        json={
+            "is_active": False
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["is_active"] is False
+
+
+def test_deactivated_user_cannot_login(admin_headers):
+    client.post(
+        "/register",
+        json={
+            "username": "deactivateuser2",
+            "email": "deactivateuser2@example.com",
+            "password": "password123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "deactivateuser2",
+            "password": "password123"
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = login_response.json()["access_token"]
+
+    me_response = client.get(
+        "/me",
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    user_id = me_response.json()["id"]
+
+    deactivate_response = client.patch(
+        f"/users/{user_id}/active",
+        json={
+            "is_active": False
+        },
+        headers=admin_headers
+    )
+
+    assert deactivate_response.status_code == 200
+
+    response = client.post(
+        "/login",
+        data={
+            "username": "deactivateuser2",
+            "password": "password123"
+        }
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Account is disabled"
+
+
+def test_deactivated_user_access_token_stops_working(admin_headers):
+    client.post(
+        "/register",
+        json={
+            "username": "deactivateuser3",
+            "email": "deactivateuser3@example.com",
+            "password": "password123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "deactivateuser3",
+            "password": "password123"
+        }
+    )
+
+    access_token = login_response.json()["access_token"]
+
+    me_response = client.get(
+        "/me",
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    user_id = me_response.json()["id"]
+
+    client.patch(
+        f"/users/{user_id}/active",
+        json={
+            "is_active": False
+        },
+        headers=admin_headers
+    )
+
+    response = client.get(
+        "/me",
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert response.status_code == 401
+    assert (
+        response.json()["detail"]
+        == "Could not validate credentials"
+    )
+
+
+def test_deactivating_user_revokes_refresh_tokens(admin_headers):
+    client.post(
+        "/register",
+        json={
+            "username": "deactivateuser4",
+            "email": "deactivateuser4@example.com",
+            "password": "password123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "deactivateuser4",
+            "password": "password123"
+        }
+    )
+
+    access_token = login_response.json()["access_token"]
+    refresh_token = login_response.json()["refresh_token"]
+
+    me_response = client.get(
+        "/me",
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    user_id = me_response.json()["id"]
+
+    client.patch(
+        f"/users/{user_id}/active",
+        json={
+            "is_active": False
+        },
+        headers=admin_headers
+    )
+
+    response = client.post(
+        "/refresh",
+        json={
+            "refresh_token": refresh_token
+        }
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid refresh token"
+
+
+def test_admin_can_reactivate_user(admin_headers):
+    client.post(
+        "/register",
+        json={
+            "username": "deactivateuser5",
+            "email": "deactivateuser5@example.com",
+            "password": "password123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "deactivateuser5",
+            "password": "password123"
+        }
+    )
+
+    access_token = login_response.json()["access_token"]
+
+    me_response = client.get(
+        "/me",
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    user_id = me_response.json()["id"]
+
+    deactivate_response = client.patch(
+        f"/users/{user_id}/active",
+        json={
+            "is_active": False
+        },
+        headers=admin_headers
+    )
+
+    assert deactivate_response.status_code == 200
+
+    activate_response = client.patch(
+        f"/users/{user_id}/active",
+        json={
+            "is_active": True
+        },
+        headers=admin_headers
+    )
+
+    assert activate_response.status_code == 200
+    assert activate_response.json()["is_active"] is True
+
+    new_login = client.post(
+        "/login",
+        data={
+            "username": "deactivateuser5",
+            "password": "password123"
+        }
+    )
+
+    assert new_login.status_code == 200

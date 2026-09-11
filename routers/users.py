@@ -19,7 +19,8 @@ from schemas import (
     RefreshTokenRequest,
     RefreshSessionResponse,
     UserRoleUpdate,
-    UserPasswordChange
+    UserPasswordChange,
+    UserActiveUpdate,
 )
 
 
@@ -89,6 +90,11 @@ def login(
             status_code=401,
             detail="Incorrect username or password"
         )
+    if not user.is_active:
+        raise HTTPException(
+        status_code=403,
+        detail="Account is disabled"
+    )
 
     access_token = create_access_token(
         data={"sub": user.username}
@@ -166,11 +172,11 @@ def refresh_access_token(
         .first()
     )
 
-    if user is None:
+    if user is None or not user.is_active:
         raise HTTPException(
-            status_code=401,
-            detail="Invalid refresh token"
-        )
+        status_code=401,
+        detail="Invalid refresh token"
+    )
 
     crud.revoke_refresh_token_session(
         refresh_session
@@ -383,6 +389,41 @@ def update_user_role(
         )
 
     user.role = role_data.role
+
+    db.commit()
+    db.refresh(user)
+
+    return user
+
+@router.patch(
+    "/users/{user_id}/active",
+    response_model=UserResponse
+)
+def update_user_active_status(
+    user_id: int,
+    active_data: UserActiveUpdate,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin)
+):
+    user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .first()
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    user.is_active = active_data.is_active
+
+    if not user.is_active:
+        crud.revoke_all_user_refresh_tokens(
+            db=db,
+            user_id=user.id
+        )
 
     db.commit()
     db.refresh(user)

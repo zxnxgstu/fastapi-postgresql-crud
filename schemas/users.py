@@ -22,6 +22,7 @@ class UserResponse(BaseModel):
     username: str
     email: str
     role: str
+    is_active: bool
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -37,6 +38,9 @@ class RefreshTokenRequest(BaseModel):
 
 class UserRoleUpdate(BaseModel):
     role: Literal["user", "admin"]
+
+class UserActiveUpdate(BaseModel):
+    is_active: bool
 
 class RefreshSessionResponse(BaseModel):
     id: int
