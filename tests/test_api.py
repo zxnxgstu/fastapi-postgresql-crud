@@ -19,7 +19,7 @@ def test_get_products():
     assert isinstance(response.json(), list)
 
 
-def test_create_product_validation(auth_headers):
+def test_create_product_validation(auth_headers: dict[str, str]):
     response = client.post(
         "/products",
         json={
@@ -42,7 +42,7 @@ def test_get_missing_product():
     }
 
 
-def test_update_missing_product(auth_headers):
+def test_update_missing_product(auth_headers: dict[str, str]):
     response = client.put(
         "/products/999999",
         json={
@@ -55,7 +55,7 @@ def test_update_missing_product(auth_headers):
 
     assert response.status_code == 404
 
-def test_delete_missing_product(admin_headers):
+def test_delete_missing_product(admin_headers: dict[str, str]):
     response = client.delete(
         "/products/999999",
         headers=admin_headers
@@ -63,7 +63,7 @@ def test_delete_missing_product(admin_headers):
 
     assert response.status_code == 404
 
-def test_full_product_crud(auth_headers, admin_headers):
+def test_full_product_crud(auth_headers: dict[str, str], admin_headers: dict[str, str]):
     create_response = client.post(
         "/products",
         json={
@@ -109,7 +109,7 @@ def test_full_product_crud(auth_headers, admin_headers):
 
     assert missing_response.status_code == 404
 
-def test_delete_product_forbidden_for_user(auth_headers):
+def test_delete_product_forbidden_for_user(auth_headers: dict[str, str]):
     create_response = client.post(
         "/products",
         json={
@@ -129,3 +129,21 @@ def test_delete_product_forbidden_for_user(auth_headers):
 
     assert response.status_code == 403
     assert response.json()["detail"] == "Admin access required"
+
+def test_get_users_forbidden_for_user(auth_headers):
+    response = client.get(
+        "/users",
+        headers=auth_headers
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Admin access required"
+
+def test_get_users_for_admin(admin_headers):
+    response = client.get(
+        "/users",
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)

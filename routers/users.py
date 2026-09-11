@@ -7,7 +7,7 @@ from auth import (
     verify_password,
     create_access_token,
 )
-from dependencies import get_db, get_current_user
+from dependencies import get_db, get_current_user, get_current_admin
 from models import User
 from schemas import UserCreate, UserResponse, Token
 
@@ -94,3 +94,10 @@ def get_me(
     current_user: User = Depends(get_current_user)
 ):
     return current_user
+
+@router.get("/users", response_model=list[UserResponse])
+def get_users(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin)
+):
+    return db.query(User).all()
