@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 import crud
-from dependencies import get_db, get_current_user
+from dependencies import get_db, get_current_user, get_current_admin
 from models import User
 from schemas import ProductCreate, ProductResponse
 
@@ -81,7 +81,7 @@ def update_product(
 def delete_product(
     product_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_admin: User = Depends(get_current_admin)
 ):
     deleted = crud.delete_product(db, product_id)
 

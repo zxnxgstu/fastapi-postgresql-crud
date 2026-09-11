@@ -1,5 +1,5 @@
 import os
-
+from models import User
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -64,6 +64,45 @@ def auth_headers():
         "/login",
         data={
             "username": "testuser",
+            "password": "password123"
+        }
+    )
+
+    token = login_response.json()["access_token"]
+
+    return {
+        "Authorization": f"Bearer {token}"
+    }
+
+@pytest.fixture
+def admin_headers():
+    client = TestClient(app)
+
+    client.post(
+        "/register",
+        json={
+            "username": "adminuser",
+            "email": "admin@example.com",
+            "password": "password123"
+        }
+    )
+
+    db = TestingSessionLocal()
+
+    user = (
+        db.query(User)
+        .filter(User.username == "adminuser")
+        .first()
+    )
+
+    user.role = "admin"
+    db.commit()
+    db.close()
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "adminuser",
             "password": "password123"
         }
     )
