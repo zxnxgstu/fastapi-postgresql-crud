@@ -9713,3 +9713,679 @@ def test_admin_users_support_pagination(admin_headers):
 
     assert len(paged_data) == 1
     assert paged_data[0]["id"] == full_data[1]["id"]
+
+def test_user_role_change_creates_audit_log(admin_headers):
+    headers = create_test_user(
+        "auditroleuser1",
+        "auditroleuser1@example.com"
+    )
+
+    me_response = client.get(
+        "/me",
+        headers=headers
+    )
+
+    assert me_response.status_code == 200
+
+    user_id = me_response.json()["id"]
+
+    role_response = client.patch(
+        f"/users/{user_id}/role",
+        json={
+            "role": "admin"
+        },
+        headers=admin_headers
+    )
+
+    assert role_response.status_code == 200
+    assert role_response.json()["role"] == "admin"
+
+    audit_response = client.get(
+        (
+            "/admin/audit-logs"
+            "?action=user_role_changed"
+            "&entity_type=user"
+            f"&entity_id={user_id}"
+        ),
+        headers=admin_headers
+    )
+
+    assert audit_response.status_code == 200
+
+    data = audit_response.json()
+
+    assert len(data) == 1
+
+    audit_log = data[0]
+
+    assert audit_log["action"] == "user_role_changed"
+    assert audit_log["entity_type"] == "user"
+    assert audit_log["entity_id"] == user_id
+    assert audit_log["actor_user_id"] is not None
+    assert audit_log["details"] == "role: user -> admin"
+
+def test_user_deactivation_creates_audit_log(admin_headers):
+    headers = create_test_user(
+        "auditdeactivateuser1",
+        "auditdeactivateuser1@example.com"
+    )
+
+    me_response = client.get(
+        "/me",
+        headers=headers
+    )
+
+    assert me_response.status_code == 200
+
+    user_id = me_response.json()["id"]
+
+    deactivate_response = client.patch(
+        f"/users/{user_id}/active",
+        json={
+            "is_active": False
+        },
+        headers=admin_headers
+    )
+
+    assert deactivate_response.status_code == 200
+    assert deactivate_response.json()["is_active"] is False
+
+    audit_response = client.get(
+        "/admin/audit-logs",
+        params={
+            "action": "user_deactivated",
+            "entity_type": "user",
+            "entity_id": user_id
+        },
+        headers=admin_headers
+    )
+
+    assert audit_response.status_code == 200
+
+    data = audit_response.json()
+
+    assert len(data) == 1
+
+    audit_log = data[0]
+
+    assert audit_log["action"] == "user_deactivated"
+    assert audit_log["entity_type"] == "user"
+    assert audit_log["entity_id"] == user_id
+    assert audit_log["actor_user_id"] is not None
+    assert audit_log["details"] == (
+        "is_active: True -> False"
+    )
+
+
+def test_user_activation_creates_audit_log(admin_headers):
+    headers = create_test_user(
+        "auditactivateuser1",
+        "auditactivateuser1@example.com"
+    )
+
+    me_response = client.get(
+        "/me",
+        headers=headers
+    )
+
+    assert me_response.status_code == 200
+
+    user_id = me_response.json()["id"]
+
+    deactivate_response = client.patch(
+        f"/users/{user_id}/active",
+        json={
+            "is_active": False
+        },
+        headers=admin_headers
+    )
+
+    assert deactivate_response.status_code == 200
+
+    activate_response = client.patch(
+        f"/users/{user_id}/active",
+        json={
+            "is_active": True
+        },
+        headers=admin_headers
+    )
+
+    assert activate_response.status_code == 200
+    assert activate_response.json()["is_active"] is True
+
+    audit_response = client.get(
+        "/admin/audit-logs",
+        params={
+            "action": "user_activated",
+            "entity_type": "user",
+            "entity_id": user_id
+        },
+        headers=admin_headers
+    )
+
+    assert audit_response.status_code == 200
+
+    data = audit_response.json()
+
+    assert len(data) == 1
+
+    audit_log = data[0]
+
+    assert audit_log["action"] == "user_activated"
+    assert audit_log["entity_type"] == "user"
+    assert audit_log["entity_id"] == user_id
+    assert audit_log["actor_user_id"] is not None
+    assert audit_log["details"] == (
+        "is_active: False -> True"
+    )
+
+def test_product_archiving_creates_audit_log(admin_headers):
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Audit Archive Product",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 3
+        },
+        headers=admin_headers
+    )
+
+    assert product_response.status_code == 201
+
+    product = product_response.json()
+    product_id = product["id"]
+
+    archive_response = client.delete(
+        f"/products/{product_id}",
+        headers=admin_headers
+    )
+
+    assert archive_response.status_code == 204
+
+    audit_response = client.get(
+        "/admin/audit-logs",
+        params={
+            "action": "product_archived",
+            "entity_type": "product",
+            "entity_id": product_id
+        },
+        headers=admin_headers
+    )
+
+    assert audit_response.status_code == 200
+
+    data = audit_response.json()
+
+    assert len(data) == 1
+
+    audit_log = data[0]
+
+    assert audit_log["action"] == "product_archived"
+    assert audit_log["entity_type"] == "product"
+    assert audit_log["entity_id"] == product_id
+    assert audit_log["actor_user_id"] is not None
+    assert audit_log["details"] == (
+        "product_name: Audit Archive Product"
+    )
+
+
+def test_product_restoring_creates_audit_log(admin_headers):
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Audit Restore Product",
+            "price": 1700,
+            "in_stock": True,
+            "stock_quantity": 4
+        },
+        headers=admin_headers
+    )
+
+    assert product_response.status_code == 201
+
+    product = product_response.json()
+    product_id = product["id"]
+
+    archive_response = client.delete(
+        f"/products/{product_id}",
+        headers=admin_headers
+    )
+
+    assert archive_response.status_code == 204
+
+    restore_response = client.post(
+        f"/products/{product_id}/restore",
+        headers=admin_headers
+    )
+
+    assert restore_response.status_code == 200
+    assert restore_response.json()["is_active"] is True
+
+    audit_response = client.get(
+        "/admin/audit-logs",
+        params={
+            "action": "product_restored",
+            "entity_type": "product",
+            "entity_id": product_id
+        },
+        headers=admin_headers
+    )
+
+    assert audit_response.status_code == 200
+
+    data = audit_response.json()
+
+    assert len(data) == 1
+
+    audit_log = data[0]
+
+    assert audit_log["action"] == "product_restored"
+    assert audit_log["entity_type"] == "product"
+    assert audit_log["entity_id"] == product_id
+    assert audit_log["actor_user_id"] is not None
+    assert audit_log["details"] == (
+        "product_name: Audit Restore Product"
+    )
+
+def test_restock_creates_audit_log(admin_headers):
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Audit Restock Product",
+            "price": 2100,
+            "in_stock": True,
+            "stock_quantity": 2
+        },
+        headers=admin_headers
+    )
+
+    assert product_response.status_code == 201
+
+    product_id = product_response.json()["id"]
+
+    restock_response = client.post(
+        f"/products/{product_id}/restock",
+        json={
+            "quantity": 5
+        },
+        headers=admin_headers
+    )
+
+    assert restock_response.status_code == 200
+    assert restock_response.json()["stock_quantity"] == 7
+
+    audit_response = client.get(
+        "/admin/audit-logs",
+        params={
+            "action": "stock_restocked",
+            "entity_type": "product",
+            "entity_id": product_id
+        },
+        headers=admin_headers
+    )
+
+    assert audit_response.status_code == 200
+
+    data = audit_response.json()
+
+    assert len(data) == 1
+
+    audit_log = data[0]
+
+    assert audit_log["action"] == "stock_restocked"
+    assert audit_log["entity_type"] == "product"
+    assert audit_log["entity_id"] == product_id
+    assert audit_log["actor_user_id"] is not None
+    assert audit_log["details"] == "quantity_added: 5"
+
+
+def test_stock_adjustment_creates_audit_log(admin_headers):
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Audit Adjust Product",
+            "price": 2600,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=admin_headers
+    )
+
+    assert product_response.status_code == 201
+
+    product_id = product_response.json()["id"]
+
+    adjust_response = client.post(
+        f"/products/{product_id}/adjust-stock",
+        json={
+            "quantity_change": -3,
+            "reason": "damaged items"
+        },
+        headers=admin_headers
+    )
+
+    assert adjust_response.status_code == 200
+    assert adjust_response.json()["stock_quantity"] == 7
+
+    audit_response = client.get(
+        "/admin/audit-logs",
+        params={
+            "action": "stock_adjusted",
+            "entity_type": "product",
+            "entity_id": product_id
+        },
+        headers=admin_headers
+    )
+
+    assert audit_response.status_code == 200
+
+    data = audit_response.json()
+
+    assert len(data) == 1
+
+    audit_log = data[0]
+
+    assert audit_log["action"] == "stock_adjusted"
+    assert audit_log["entity_type"] == "product"
+    assert audit_log["entity_id"] == product_id
+    assert audit_log["actor_user_id"] is not None
+    assert audit_log["details"] == (
+        "quantity_change: -3; "
+        "reason: damaged items"
+    )
+
+def test_promo_code_update_creates_audit_log(admin_headers):
+    import uuid
+
+    promo_code_value = (
+        f"AUDIT{uuid.uuid4().hex[:10].upper()}"
+    )
+
+    create_response = client.post(
+        "/promo-codes",
+        json={
+            "code": promo_code_value,
+            "discount_percent": 10,
+            "active": True,
+            "min_order_amount": 0
+        },
+        headers=admin_headers
+    )
+
+    assert create_response.status_code == 201
+
+    promo_code = create_response.json()
+    promo_code_id = promo_code["id"]
+
+    update_response = client.patch(
+        f"/admin/promo-codes/{promo_code_id}",
+        json={
+            "discount_percent": 25,
+            "active": False
+        },
+        headers=admin_headers
+    )
+
+    assert update_response.status_code == 200
+
+    updated_promo = update_response.json()
+
+    assert updated_promo["discount_percent"] == 25
+    assert updated_promo["active"] is False
+
+    audit_response = client.get(
+        "/admin/audit-logs",
+        params={
+            "action": "promo_code_updated",
+            "entity_type": "promo_code",
+            "entity_id": promo_code_id
+        },
+        headers=admin_headers
+    )
+
+    assert audit_response.status_code == 200
+
+    data = audit_response.json()
+
+    assert len(data) == 1
+
+    audit_log = data[0]
+
+    assert audit_log["action"] == "promo_code_updated"
+    assert audit_log["entity_type"] == "promo_code"
+    assert audit_log["entity_id"] == promo_code_id
+    assert audit_log["actor_user_id"] is not None
+    assert audit_log["details"] == (
+        "updated_fields: discount_percent, active"
+    )
+
+def test_regular_user_cannot_view_audit_logs():
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    headers = create_test_user(
+        f"auditviewer_{suffix}",
+        f"auditviewer_{suffix}@example.com"
+    )
+
+    response = client.get(
+        "/admin/audit-logs",
+        headers=headers
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Admin access required"
+
+
+def test_admin_can_filter_audit_logs_by_entity(admin_headers):
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    headers = create_test_user(
+        f"auditentity_{suffix}",
+        f"auditentity_{suffix}@example.com"
+    )
+
+    me_response = client.get(
+        "/me",
+        headers=headers
+    )
+
+    assert me_response.status_code == 200
+
+    user_id = me_response.json()["id"]
+
+    role_response = client.patch(
+        f"/users/{user_id}/role",
+        json={
+            "role": "admin"
+        },
+        headers=admin_headers
+    )
+
+    assert role_response.status_code == 200
+
+    response = client.get(
+        "/admin/audit-logs",
+        params={
+            "action": "user_role_changed",
+            "entity_type": "user",
+            "entity_id": user_id
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1
+    assert data[0]["action"] == "user_role_changed"
+    assert data[0]["entity_type"] == "user"
+    assert data[0]["entity_id"] == user_id
+
+
+def test_admin_can_filter_audit_logs_by_actor(admin_headers):
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    actor_headers = create_test_user(
+        f"auditactor_{suffix}",
+        f"auditactor_{suffix}@example.com"
+    )
+
+    actor_me_response = client.get(
+        "/me",
+        headers=actor_headers
+    )
+
+    assert actor_me_response.status_code == 200
+
+    actor_id = actor_me_response.json()["id"]
+
+    promote_actor_response = client.patch(
+        f"/users/{actor_id}/role",
+        json={
+            "role": "admin"
+        },
+        headers=admin_headers
+    )
+
+    assert promote_actor_response.status_code == 200
+
+    target_headers = create_test_user(
+        f"audittarget_{suffix}",
+        f"audittarget_{suffix}@example.com"
+    )
+
+    target_me_response = client.get(
+        "/me",
+        headers=target_headers
+    )
+
+    assert target_me_response.status_code == 200
+
+    target_id = target_me_response.json()["id"]
+
+    role_response = client.patch(
+        f"/users/{target_id}/role",
+        json={
+            "role": "admin"
+        },
+        headers=actor_headers
+    )
+
+    assert role_response.status_code == 200
+
+    response = client.get(
+        "/admin/audit-logs",
+        params={
+            "actor_user_id": actor_id,
+            "action": "user_role_changed"
+        },
+        headers=admin_headers
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1
+    assert data[0]["actor_user_id"] == actor_id
+    assert data[0]["entity_id"] == target_id
+
+
+def test_admin_audit_logs_support_pagination(admin_headers):
+    import uuid
+
+    suffix = uuid.uuid4().hex[:8]
+
+    actor_headers = create_test_user(
+        f"auditpageactor_{suffix}",
+        f"auditpageactor_{suffix}@example.com"
+    )
+
+    actor_me_response = client.get(
+        "/me",
+        headers=actor_headers
+    )
+
+    assert actor_me_response.status_code == 200
+
+    actor_id = actor_me_response.json()["id"]
+
+    promote_response = client.patch(
+        f"/users/{actor_id}/role",
+        json={
+            "role": "admin"
+        },
+        headers=admin_headers
+    )
+
+    assert promote_response.status_code == 200
+
+    target_ids = []
+
+    for index in range(3):
+        target_headers = create_test_user(
+            f"auditpagetarget{index}_{suffix}",
+            f"auditpagetarget{index}_{suffix}@example.com"
+        )
+
+        target_me_response = client.get(
+            "/me",
+            headers=target_headers
+        )
+
+        assert target_me_response.status_code == 200
+
+        target_id = target_me_response.json()["id"]
+        target_ids.append(target_id)
+
+        role_response = client.patch(
+            f"/users/{target_id}/role",
+            json={
+                "role": "admin"
+            },
+            headers=actor_headers
+        )
+
+        assert role_response.status_code == 200
+
+    full_response = client.get(
+        "/admin/audit-logs",
+        params={
+            "actor_user_id": actor_id,
+            "action": "user_role_changed",
+            "limit": 10
+        },
+        headers=admin_headers
+    )
+
+    assert full_response.status_code == 200
+
+    full_data = full_response.json()
+
+    assert len(full_data) == 3
+
+    page_response = client.get(
+        "/admin/audit-logs",
+        params={
+            "actor_user_id": actor_id,
+            "action": "user_role_changed",
+            "skip": 1,
+            "limit": 1
+        },
+        headers=admin_headers
+    )
+
+    assert page_response.status_code == 200
+
+    page_data = page_response.json()
+
+    assert len(page_data) == 1
+    assert page_data[0]["id"] == full_data[1]["id"]

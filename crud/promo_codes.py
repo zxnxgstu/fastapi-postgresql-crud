@@ -85,7 +85,4 @@ def update_promo_code(
             value
         )
 
-    db.commit()
-    db.refresh(promo_code)
-
     return promo_code

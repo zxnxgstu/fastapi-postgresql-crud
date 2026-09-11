@@ -405,7 +405,10 @@ def get_users(
         .all()
     )
 
-@router.patch("/users/{user_id}/role", response_model=UserResponse)
+@router.patch(
+    "/users/{user_id}/role",
+    response_model=UserResponse
+)
 def update_user_role(
     user_id: int,
     role_data: UserRoleUpdate,
@@ -424,7 +427,20 @@ def update_user_role(
             detail="User not found"
         )
 
-    user.role = role_data.role
+    old_role = user.role
+    new_role = role_data.role
+
+    user.role = new_role
+
+    if old_role != new_role:
+        crud.create_audit_log(
+            db=db,
+            actor_user_id=current_admin.id,
+            action="user_role_changed",
+            entity_type="user",
+            entity_id=user.id,
+            details=f"role: {old_role} -> {new_role}"
+        )
 
     db.commit()
     db.refresh(user)
@@ -453,9 +469,30 @@ def update_user_active_status(
             detail="User not found"
         )
 
-    user.is_active = active_data.is_active
+    old_status = user.is_active
+    new_status = active_data.is_active
 
-    if not user.is_active:
+    user.is_active = new_status
+
+    if old_status != new_status:
+        action = (
+            "user_activated"
+            if new_status
+            else "user_deactivated"
+        )
+
+        crud.create_audit_log(
+            db=db,
+            actor_user_id=current_admin.id,
+            action=action,
+            entity_type="user",
+            entity_id=user.id,
+            details=(
+                f"is_active: {old_status} -> {new_status}"
+            )
+        )
+
+    if not new_status:
         crud.revoke_all_user_refresh_tokens(
             db=db,
             user_id=user.id

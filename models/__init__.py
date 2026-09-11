@@ -17,6 +17,7 @@ from .shipment_event import ShipmentEvent
 from .shipment_tracking_history import ShipmentTrackingHistory
 from .stock_movement import StockMovement
 from .refresh_token import RefreshToken
+from .audit_log import AuditLog
 
 
 __all__ = [
@@ -39,4 +40,5 @@ __all__ = [
     "ShipmentTrackingHistory",
     "StockMovement",
     "RefreshToken",
+    "AuditLog",
 ]

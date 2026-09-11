@@ -160,8 +160,14 @@ def update_product(
     return db_product
 
 
-def delete_product(db: Session, product_id: int):
-    db_product = get_product(db, product_id)
+def delete_product(
+    db: Session,
+    product_id: int
+):
+    db_product = get_product(
+        db,
+        product_id
+    )
 
     if db_product is None:
         return False
@@ -171,19 +177,14 @@ def delete_product(db: Session, product_id: int):
 
     db_product.is_active = False
 
-    db.commit()
-    db.refresh(db_product)
-
     return True
+
 
 def restore_product(
     db: Session,
     product: Product
 ):
     product.is_active = True
-
-    db.commit()
-    db.refresh(product)
 
     return product
 
@@ -213,10 +214,8 @@ def restock_product(
         reason="restock"
     )
 
-    db.commit()
-    db.refresh(product)
-
     return product
+
 
 def adjust_product_stock(
     db: Session,
@@ -240,8 +239,5 @@ def adjust_product_stock(
         quantity_change=quantity_change,
         reason=reason
     )
-
-    db.commit()
-    db.refresh(product)
 
     return product

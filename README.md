@@ -294,6 +294,15 @@ REST API для управления товарами, созданный на F
 - Admin user filtering by active status
 - Combined user filters
 - User list pagination for admins
+- Admin audit log
+- Audit logging for user role changes
+- Audit logging for user activation and deactivation
+- Audit logging for product archiving and restoring
+- Audit logging for inventory restock and stock adjustments
+- Audit logging for promo code updates
+- Audit log filtering by action, actor, entity type and entity ID
+- Audit log pagination
+- Admin-only access to audit logs
 
 ## API endpoints
 
@@ -332,4 +341,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 219 automated API tests.
+The project currently includes 231 automated API tests.

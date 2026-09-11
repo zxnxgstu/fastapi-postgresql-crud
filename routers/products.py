@@ -113,19 +113,47 @@ def update_product(
     return product
 
 
-@router.delete("/{product_id}", status_code=204)
+@router.delete(
+    "/{product_id}",
+    status_code=204
+)
 def delete_product(
     product_id: int,
     db: Session = Depends(get_db),
     current_admin: User = Depends(get_current_admin)
 ):
-    deleted = crud.delete_product(db, product_id)
+    product = crud.get_product(
+        db,
+        product_id
+    )
+
+    if product is None or not product.is_active:
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found"
+        )
+
+    deleted = crud.delete_product(
+        db,
+        product_id
+    )
 
     if not deleted:
         raise HTTPException(
             status_code=404,
             detail="Product not found"
         )
+
+    crud.create_audit_log(
+        db=db,
+        actor_user_id=current_admin.id,
+        action="product_archived",
+        entity_type="product",
+        entity_id=product.id,
+        details=f"product_name: {product.name}"
+    )
+
+    db.commit()
 
     return Response(status_code=204)
 
@@ -155,10 +183,24 @@ def restore_product(
             detail="Product is already active"
         )
 
-    return crud.restore_product(
+    product = crud.restore_product(
         db,
         product
     )
+
+    crud.create_audit_log(
+        db=db,
+        actor_user_id=current_admin.id,
+        action="product_restored",
+        entity_type="product",
+        entity_id=product.id,
+        details=f"product_name: {product.name}"
+    )
+
+    db.commit()
+    db.refresh(product)
+
+    return product
 
 @router.get(
     "/{product_id}/price-history",
@@ -230,11 +272,27 @@ def restock_product(
             detail="Product not found"
         )
 
-    return crud.restock_product(
+    product = crud.restock_product(
         db=db,
         product=product,
         quantity=restock_data.quantity
     )
+
+    crud.create_audit_log(
+        db=db,
+        actor_user_id=current_admin.id,
+        action="stock_restocked",
+        entity_type="product",
+        entity_id=product.id,
+        details=(
+            f"quantity_added: {restock_data.quantity}"
+        )
+    )
+
+    db.commit()
+    db.refresh(product)
+
+    return product
 
 @router.post(
     "/{product_id}/adjust-stock",
@@ -258,7 +316,7 @@ def adjust_product_stock(
         )
 
     try:
-        return crud.adjust_product_stock(
+        product = crud.adjust_product_stock(
             db=db,
             product=product,
             quantity_change=adjustment_data.quantity_change,
@@ -269,3 +327,21 @@ def adjust_product_stock(
             status_code=400,
             detail=str(exc)
         )
+
+    crud.create_audit_log(
+        db=db,
+        actor_user_id=current_admin.id,
+        action="stock_adjusted",
+        entity_type="product",
+        entity_id=product.id,
+        details=(
+            f"quantity_change: "
+            f"{adjustment_data.quantity_change}; "
+            f"reason: {adjustment_data.reason}"
+        )
+    )
+
+    db.commit()
+    db.refresh(product)
+
+    return product

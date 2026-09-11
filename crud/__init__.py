@@ -125,6 +125,11 @@ from .refresh_tokens import (
     get_user_refresh_session,
 )
 
+from .audit_logs import (
+    create_audit_log,
+    get_audit_logs,
+)
+
 
 __all__ = [
     "get_products",
@@ -208,4 +213,6 @@ __all__ = [
     "revoke_all_user_refresh_tokens",
     "get_user_refresh_sessions",
     "get_user_refresh_session",
+    "create_audit_log",
+    "get_audit_logs",
 ]
