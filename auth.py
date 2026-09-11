@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-
+from uuid import uuid4
 import jwt
 from pwdlib import PasswordHash
 
@@ -47,7 +47,8 @@ def create_refresh_token(data: dict) -> str:
 
     to_encode.update({
         "exp": expire,
-        "type": "refresh"
+        "type": "refresh",
+        "jti": uuid4().hex
     })
 
     return jwt.encode(

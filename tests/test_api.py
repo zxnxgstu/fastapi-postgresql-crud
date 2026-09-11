@@ -8529,3 +8529,180 @@ def test_invalid_refresh_token_is_rejected():
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid refresh token"
+
+def test_refresh_token_rotation_revokes_old_token():
+    client.post(
+        "/register",
+        json={
+            "username": "rotationuser1",
+            "email": "rotationuser1@example.com",
+            "password": "password123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "rotationuser1",
+            "password": "password123"
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    old_refresh_token = login_response.json()["refresh_token"]
+
+    refresh_response = client.post(
+        "/refresh",
+        json={
+            "refresh_token": old_refresh_token
+        }
+    )
+
+    assert refresh_response.status_code == 200
+
+    new_refresh_token = refresh_response.json()["refresh_token"]
+
+    assert new_refresh_token != old_refresh_token
+
+    old_token_response = client.post(
+        "/refresh",
+        json={
+            "refresh_token": old_refresh_token
+        }
+    )
+
+    assert old_token_response.status_code == 401
+    assert (
+        old_token_response.json()["detail"]
+        == "Invalid refresh token"
+    )
+
+
+def test_rotated_refresh_token_can_be_used():
+    client.post(
+        "/register",
+        json={
+            "username": "rotationuser2",
+            "email": "rotationuser2@example.com",
+            "password": "password123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "rotationuser2",
+            "password": "password123"
+        }
+    )
+
+    first_refresh_token = (
+        login_response.json()["refresh_token"]
+    )
+
+    first_refresh_response = client.post(
+        "/refresh",
+        json={
+            "refresh_token": first_refresh_token
+        }
+    )
+
+    assert first_refresh_response.status_code == 200
+
+    second_refresh_token = (
+        first_refresh_response.json()["refresh_token"]
+    )
+
+    second_refresh_response = client.post(
+        "/refresh",
+        json={
+            "refresh_token": second_refresh_token
+        }
+    )
+
+    assert second_refresh_response.status_code == 200
+
+    data = second_refresh_response.json()
+
+    assert "access_token" in data
+    assert "refresh_token" in data
+    assert data["token_type"] == "bearer"
+
+
+def test_logout_revokes_refresh_token():
+    client.post(
+        "/register",
+        json={
+            "username": "logoutuser1",
+            "email": "logoutuser1@example.com",
+            "password": "password123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "logoutuser1",
+            "password": "password123"
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    refresh_token = login_response.json()["refresh_token"]
+
+    logout_response = client.post(
+        "/logout",
+        json={
+            "refresh_token": refresh_token
+        }
+    )
+
+    assert logout_response.status_code == 204
+
+    refresh_response = client.post(
+        "/refresh",
+        json={
+            "refresh_token": refresh_token
+        }
+    )
+
+    assert refresh_response.status_code == 401
+    assert (
+        refresh_response.json()["detail"]
+        == "Invalid refresh token"
+    )
+
+
+def test_access_token_cannot_be_used_for_logout():
+    client.post(
+        "/register",
+        json={
+            "username": "logoutuser2",
+            "email": "logoutuser2@example.com",
+            "password": "password123"
+        }
+    )
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": "logoutuser2",
+            "password": "password123"
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = login_response.json()["access_token"]
+
+    response = client.post(
+        "/logout",
+        json={
+            "refresh_token": access_token
+        }
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid refresh token"

@@ -265,6 +265,11 @@ REST API для управления товарами, созданный на F
 - Refresh endpoint issues new tokens without requiring login again
 - Access tokens cannot be used as refresh tokens
 - Invalid refresh tokens are rejected
+- Refresh token sessions stored in the database
+- Refresh token rotation with one-time token usage
+- Old refresh tokens are revoked after rotation
+- Logout revokes the current refresh token
+- Revoked refresh tokens cannot be reused
 
 ## API endpoints
 
@@ -303,4 +308,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 194 automated API tests.
+The project currently includes 198 automated API tests.

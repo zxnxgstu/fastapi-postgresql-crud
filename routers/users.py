@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
+import crud
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-
+from datetime import datetime, timezone
 from auth import (
     hash_password,
     verify_password,
@@ -88,18 +89,36 @@ def login(
         )
 
     access_token = create_access_token(
-    data={"sub": user.username}
-)
+        data={"sub": user.username}
+    )
 
     refresh_token = create_refresh_token(
-    data={"sub": user.username}
-)
+        data={"sub": user.username}
+    )
+
+    refresh_payload = decode_refresh_token(
+        refresh_token
+    )
+
+    expires_at = datetime.fromtimestamp(
+        refresh_payload["exp"],
+        tz=timezone.utc
+    )
+
+    crud.create_refresh_token_session(
+        db=db,
+        user_id=user.id,
+        jti=refresh_payload["jti"],
+        expires_at=expires_at
+    )
+
+    db.commit()
 
     return {
-    "access_token": access_token,
-    "refresh_token": refresh_token,
-    "token_type": "bearer"
-}
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
+    }
 
 @router.post("/refresh", response_model=Token)
 def refresh_access_token(
@@ -117,8 +136,23 @@ def refresh_access_token(
         )
 
     username = payload.get("sub")
+    jti = payload.get("jti")
 
-    if username is None:
+    if username is None or jti is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid refresh token"
+        )
+
+    refresh_session = crud.get_refresh_token_session(
+        db,
+        jti
+    )
+
+    if (
+        refresh_session is None
+        or refresh_session.revoked
+    ):
         raise HTTPException(
             status_code=401,
             detail="Invalid refresh token"
@@ -136,19 +170,86 @@ def refresh_access_token(
             detail="Invalid refresh token"
         )
 
+    crud.revoke_refresh_token_session(
+        refresh_session
+    )
+
     access_token = create_access_token(
         data={"sub": user.username}
     )
 
-    refresh_token = create_refresh_token(
+    new_refresh_token = create_refresh_token(
         data={"sub": user.username}
     )
 
+    new_payload = decode_refresh_token(
+        new_refresh_token
+    )
+
+    expires_at = datetime.fromtimestamp(
+        new_payload["exp"],
+        tz=timezone.utc
+    )
+
+    crud.create_refresh_token_session(
+        db=db,
+        user_id=user.id,
+        jti=new_payload["jti"],
+        expires_at=expires_at
+    )
+
+    db.commit()
+
     return {
         "access_token": access_token,
-        "refresh_token": refresh_token,
+        "refresh_token": new_refresh_token,
         "token_type": "bearer"
     }
+
+@router.post("/logout", status_code=204)
+def logout(
+    token_data: RefreshTokenRequest,
+    db: Session = Depends(get_db)
+):
+    payload = decode_refresh_token(
+        token_data.refresh_token
+    )
+
+    if payload is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid refresh token"
+        )
+
+    jti = payload.get("jti")
+
+    if jti is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid refresh token"
+        )
+
+    refresh_session = crud.get_refresh_token_session(
+        db,
+        jti
+    )
+
+    if (
+        refresh_session is None
+        or refresh_session.revoked
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid refresh token"
+        )
+
+    crud.revoke_refresh_token_session(
+        refresh_session
+    )
+
+    db.commit()
+
+    return Response(status_code=204)
 
 @router.get("/me", response_model=UserResponse)
 def get_me(

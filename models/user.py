@@ -49,7 +49,12 @@ class User(Base):
         cascade="all, delete-orphan"
     )
     addresses = relationship(
-    "Address",
-    back_populates="user",
-    cascade="all, delete-orphan"
-)
+        "Address",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    refresh_tokens = relationship(
+        "RefreshToken",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
