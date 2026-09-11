@@ -39,6 +39,13 @@ from .promo_codes import (
     create_promo_code,
 )
 
+from .wishlist import (
+    get_wishlist,
+    get_wishlist_item,
+    add_wishlist_item,
+    delete_wishlist_item,
+)
+
 __all__ = [
     "get_products",
     "get_product",
@@ -66,4 +73,8 @@ __all__ = [
     "get_promo_code_by_code",
     "create_promo_code",
     "cancel_order"
+    "get_wishlist",
+    "get_wishlist_item",
+    "add_wishlist_item",
+    "delete_wishlist_item",
 ]

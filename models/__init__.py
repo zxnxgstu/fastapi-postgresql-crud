@@ -5,7 +5,7 @@ from .order_item import OrderItem
 from .product import Product
 from .user import User
 from .promo_code import PromoCode
-
+from .wishlist_item import WishlistItem
 
 __all__ = [
     "CartItem",
@@ -15,4 +15,5 @@ __all__ = [
     "Product",
     "User",
     "PromoCode"
+    "WishlistItem",
 ]

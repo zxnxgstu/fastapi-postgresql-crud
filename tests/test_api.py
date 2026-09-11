@@ -1629,3 +1629,156 @@ def test_admin_cannot_cancel_order_via_status_patch(admin_headers):
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Use cancel endpoint to cancel orders"
+
+def test_add_product_to_wishlist():
+    headers = create_test_user(
+        "wishlistuser1",
+        "wishlistuser1@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Wishlist Product",
+            "price": 1000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    response = client.post(
+        "/wishlist",
+        json={
+            "product_id": product_id
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 201
+    assert response.json()["product_id"] == product_id
+
+
+def test_cannot_add_duplicate_wishlist_item():
+    headers = create_test_user(
+        "wishlistuser2",
+        "wishlistuser2@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Wishlist Duplicate Product",
+            "price": 1500,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/wishlist",
+        json={
+            "product_id": product_id
+        },
+        headers=headers
+    )
+
+    response = client.post(
+        "/wishlist",
+        json={
+            "product_id": product_id
+        },
+        headers=headers
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Product already in wishlist"
+
+
+def test_remove_product_from_wishlist():
+    headers = create_test_user(
+        "wishlistuser3",
+        "wishlistuser3@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Wishlist Remove Product",
+            "price": 2000,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/wishlist",
+        json={
+            "product_id": product_id
+        },
+        headers=headers
+    )
+
+    response = client.delete(
+        f"/wishlist/{product_id}",
+        headers=headers
+    )
+
+    assert response.status_code == 204
+
+    wishlist_response = client.get(
+        "/wishlist",
+        headers=headers
+    )
+
+    assert wishlist_response.status_code == 200
+    assert wishlist_response.json() == []
+
+
+def test_users_have_separate_wishlists():
+    headers1 = create_test_user(
+        "wishlistuser4",
+        "wishlistuser4@example.com"
+    )
+
+    headers2 = create_test_user(
+        "wishlistuser5",
+        "wishlistuser5@example.com"
+    )
+
+    product_response = client.post(
+        "/products",
+        json={
+            "name": "Private Wishlist Product",
+            "price": 2500,
+            "in_stock": True,
+            "stock_quantity": 10
+        },
+        headers=headers1
+    )
+
+    product_id = product_response.json()["id"]
+
+    client.post(
+        "/wishlist",
+        json={
+            "product_id": product_id
+        },
+        headers=headers1
+    )
+
+    response = client.get(
+        "/wishlist",
+        headers=headers2
+    )
+
+    assert response.status_code == 200
+    assert response.json() == []

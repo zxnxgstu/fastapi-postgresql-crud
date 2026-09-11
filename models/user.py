@@ -33,3 +33,8 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
+    wishlist_items = relationship(
+    "WishlistItem",
+    back_populates="user",
+    cascade="all, delete-orphan"
+)

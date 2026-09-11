@@ -83,6 +83,11 @@ REST API для управления товарами, созданный на F
 - Protection against repeated cancellation
 - Completed orders cannot be cancelled
 - Direct cancelled status updates are blocked
+- User wishlist / favorite products
+- Add products to wishlist
+- Remove products from wishlist
+- Duplicate wishlist items are prevented
+- Wishlist data is isolated between users
 
 ## API endpoints
 
@@ -121,4 +126,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 58 automated API tests.
+The project currently includes 62 automated API tests.

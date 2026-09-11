@@ -9,6 +9,7 @@ from .orders import (
     OrderCreate,
 )
 from .promo_codes import PromoCodeCreate, PromoCodeResponse
+from .wishlist import WishlistItemCreate, WishlistItemResponse
 
 __all__ = [
     "ProductCreate",
@@ -28,4 +29,6 @@ __all__ = [
     "OrderCreate",
     "PromoCodeCreate",
     "PromoCodeResponse"
+    "WishlistItemCreate",
+    "WishlistItemResponse"
 ]
