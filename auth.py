@@ -23,14 +23,20 @@ def verify_password(
     )
 
 
-def create_access_token(data: dict) -> str:
+def create_access_token(data: dict):
     to_encode = data.copy()
 
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.access_token_expire_minutes
+    expire = (
+        datetime.now(timezone.utc)
+        + timedelta(
+            minutes=settings.access_token_expire_minutes
+        )
     )
 
-    to_encode.update({"exp": expire})
+    to_encode.update({
+        "exp": expire,
+        "type": "access"
+    })
 
     return jwt.encode(
         to_encode,
@@ -76,10 +82,16 @@ def decode_refresh_token(token: str):
 
 def decode_access_token(token: str):
     try:
-        return jwt.decode(
+        payload = jwt.decode(
             token,
             settings.jwt_secret_key,
             algorithms=[settings.jwt_algorithm]
         )
+
+        if payload.get("type") != "access":
+            return None
+
+        return payload
+
     except jwt.InvalidTokenError:
         return None

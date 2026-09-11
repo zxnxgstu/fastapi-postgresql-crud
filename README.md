@@ -303,6 +303,9 @@ REST API для управления товарами, созданный на F
 - Audit log filtering by action, actor, entity type and entity ID
 - Audit log pagination
 - Admin-only access to audit logs
+- Separate access and refresh JWT token types
+- Refresh tokens cannot be used as Bearer access tokens
+- Access token validation rejects non-access JWTs
 
 ## API endpoints
 
@@ -341,4 +344,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 231 automated API tests.
+The project currently includes 232 automated API tests.

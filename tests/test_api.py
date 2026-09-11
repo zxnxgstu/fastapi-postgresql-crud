@@ -10389,3 +10389,57 @@ def test_admin_audit_logs_support_pagination(admin_headers):
 
     assert len(page_data) == 1
     assert page_data[0]["id"] == full_data[1]["id"]
+
+def test_refresh_token_cannot_be_used_as_access_token():
+    import uuid
+
+    suffix = uuid.uuid4().hex[:10]
+
+    username = f"tokentype_{suffix}"
+    email = f"tokentype_{suffix}@example.com"
+    password = "password123"
+
+    register_response = client.post(
+        "/register",
+        json={
+            "username": username,
+            "email": email,
+            "password": password
+        }
+    )
+
+    assert register_response.status_code == 201
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": username,
+            "password": password
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    tokens = login_response.json()
+
+    access_token = tokens["access_token"]
+    refresh_token = tokens["refresh_token"]
+
+    access_response = client.get(
+        "/me",
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert access_response.status_code == 200
+    assert access_response.json()["username"] == username
+
+    refresh_as_access_response = client.get(
+        "/me",
+        headers={
+            "Authorization": f"Bearer {refresh_token}"
+        }
+    )
+
+    assert refresh_as_access_response.status_code == 401
