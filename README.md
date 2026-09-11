@@ -306,6 +306,8 @@ REST API для управления товарами, созданный на F
 - Separate access and refresh JWT token types
 - Refresh tokens cannot be used as Bearer access tokens
 - Access token validation rejects non-access JWTs
+- Expired refresh sessions are excluded from active session lists
+- Refresh session expiration is validated against UTC time
 
 ## API endpoints
 
@@ -344,4 +346,4 @@ GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 GET /products?search=Keyboard&in_stock=true&category_id=1&skip=0&limit=10
 ```
 
-The project currently includes 232 automated API tests.
+The project currently includes 233 automated API tests.

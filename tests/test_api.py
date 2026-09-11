@@ -10443,3 +10443,87 @@ def test_refresh_token_cannot_be_used_as_access_token():
     )
 
     assert refresh_as_access_response.status_code == 401
+
+def test_expired_refresh_session_is_not_listed(
+    db_session
+):
+    import uuid
+    from datetime import datetime, timedelta, timezone
+
+    from auth import decode_refresh_token
+    from models import RefreshToken
+
+    suffix = uuid.uuid4().hex[:10]
+
+    username = f"expiredsession_{suffix}"
+    email = f"expiredsession_{suffix}@example.com"
+    password = "password123"
+
+    register_response = client.post(
+        "/register",
+        json={
+            "username": username,
+            "email": email,
+            "password": password
+        }
+    )
+
+    assert register_response.status_code == 201
+
+    login_response = client.post(
+        "/login",
+        data={
+            "username": username,
+            "password": password
+        }
+    )
+
+    assert login_response.status_code == 200
+
+    tokens = login_response.json()
+
+    access_token = tokens["access_token"]
+    refresh_token = tokens["refresh_token"]
+
+    payload = decode_refresh_token(
+        refresh_token
+    )
+
+    assert payload is not None
+
+    jti = payload["jti"]
+
+    refresh_session = (
+        db_session.query(RefreshToken)
+        .filter(
+            RefreshToken.jti == jti
+        )
+        .first()
+    )
+
+    assert refresh_session is not None
+
+    refresh_session_id = refresh_session.id
+
+    refresh_session.expires_at = (
+        datetime.now(timezone.utc)
+        - timedelta(minutes=1)
+    )
+
+    db_session.commit()
+
+    sessions_response = client.get(
+        "/sessions",
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+
+    assert sessions_response.status_code == 200
+
+    sessions = sessions_response.json()
+
+    assert all(
+        session["id"] != refresh_session_id
+        for session in sessions
+    )

@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from models import RefreshToken
@@ -63,11 +63,14 @@ def get_user_refresh_sessions(
     db: Session,
     user_id: int
 ):
+    now = datetime.now(timezone.utc)
+
     return (
         db.query(RefreshToken)
         .filter(
             RefreshToken.user_id == user_id,
-            RefreshToken.revoked.is_(False)
+            RefreshToken.revoked.is_(False),
+            RefreshToken.expires_at > now
         )
         .order_by(
             RefreshToken.created_at.desc(),
