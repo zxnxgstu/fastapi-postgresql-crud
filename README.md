@@ -221,7 +221,7 @@ The API is identified as:
 
 ```text
 E-Commerce REST API
-Version 1.0.0
+Version 1.0.2
 ```
 
 ## Health Check
@@ -484,7 +484,7 @@ The deployment uses:
 Stable release:
 
 ```text
-v1.0.0
+v1.0.2
 ```
 
 The project continues to receive deployment and documentation improvements after the initial release.
