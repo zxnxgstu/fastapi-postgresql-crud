@@ -23,7 +23,7 @@ app = FastAPI(
         "Backend API for an e-commerce platform built with "
         "FastAPI, PostgreSQL, SQLAlchemy and JWT authentication."
     ),
-    version="1.0.0"
+    version="1.0.2"
 )
 
 app.include_router(products_router)

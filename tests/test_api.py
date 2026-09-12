@@ -11318,4 +11318,4 @@ def test_openapi_metadata():
     data = response.json()
 
     assert data["info"]["title"] == "E-Commerce REST API"
-    assert data["info"]["version"] == "1.0.0"
+    assert data["info"]["version"] == "1.0.2"
