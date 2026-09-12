@@ -4,7 +4,22 @@
 
 Production-style REST API for an e-commerce platform built with FastAPI, PostgreSQL, SQLAlchemy and JWT authentication.
 
-The project includes authentication, role-based access control, product and inventory management, shopping cart, orders, payments, delivery tracking, promo codes, reviews, analytics, audit logging, Docker support, database migrations and automated CI testing.
+The project includes authentication, role-based access control, product and inventory management, shopping cart, orders, payments, refunds, delivery tracking, promo codes, reviews, analytics, audit logging, Docker support, database migrations and automated CI testing.
+
+## Live Demo
+
+The API is deployed on Render and is publicly available.
+
+**Swagger UI:**  
+https://fastapi-postgresql-crud.onrender.com/docs
+
+**Health Check:**  
+https://fastapi-postgresql-crud.onrender.com/health
+
+**Base URL:**  
+https://fastapi-postgresql-crud.onrender.com
+
+> The free Render instance may spin down after inactivity, so the first request can take longer than usual.
 
 ## Tech Stack
 
@@ -14,7 +29,7 @@ The project includes authentication, role-based access control, product and inve
 - SQLAlchemy 2
 - Pydantic 2
 - Alembic
-- JWT / PyJWT
+- PyJWT
 - pwdlib / Argon2
 - Docker
 - Docker Compose
@@ -51,7 +66,7 @@ The project includes authentication, role-based access control, product and inve
 - Search, filtering, sorting and pagination
 - Product stock quantities
 - Product archiving and restoring
-- Price history
+- Product price history
 - Wishlist support
 - Product reviews and ratings
 - Price-drop notifications
@@ -63,7 +78,7 @@ The project includes authentication, role-based access control, product and inve
 - Order creation from cart
 - Order history
 - Order item price snapshots
-- Order subtotal, discounts, delivery price and final total
+- Subtotal, discount, delivery price and final total calculation
 - Customer notes
 - Order cancellation
 - Automatic stock reduction and restoration
@@ -84,10 +99,10 @@ The project includes authentication, role-based access control, product and inve
 
 - Percentage discounts
 - Expiration dates
-- Minimum order amount
+- Minimum order amount requirements
 - Usage limits
 - Usage counter
-- Active/inactive status
+- Active/inactive state
 - Admin promo code management
 
 ### Delivery and Shipment Tracking
@@ -96,7 +111,7 @@ The project includes authentication, role-based access control, product and inve
 - Default delivery address
 - Delivery methods
 - Delivery pricing
-- Delivery snapshot data stored in orders
+- Delivery data snapshots in orders
 - Shipping carriers and tracking numbers
 - Estimated delivery dates
 - Shipment event history
@@ -118,7 +133,7 @@ The project includes authentication, role-based access control, product and inve
 ### Admin Features
 
 - User search and filtering
-- User activation/deactivation
+- User activation and deactivation
 - Role management
 - Order filtering and pagination
 - Product archive management
@@ -132,7 +147,7 @@ The project includes authentication, role-based access control, product and inve
 
 ### Audit Logging
 
-Admin and security-sensitive actions are recorded in the database.
+Administrative and security-sensitive actions are recorded in the database.
 
 Audit events include:
 
@@ -160,7 +175,7 @@ The API includes:
 - Role-based authorization
 - Disabled-account protection
 - Password-change session revocation
-- Input validation with Pydantic
+- Pydantic input validation
 - Environment-based secrets
 - Admin audit logging
 
@@ -168,9 +183,29 @@ Secrets are loaded from environment variables and are not stored in the reposito
 
 ## API Documentation
 
-FastAPI automatically provides interactive API documentation.
+### Live API
 
-After starting the application:
+Swagger UI:
+
+```text
+https://fastapi-postgresql-crud.onrender.com/docs
+```
+
+Health check:
+
+```text
+https://fastapi-postgresql-crud.onrender.com/health
+```
+
+Base URL:
+
+```text
+https://fastapi-postgresql-crud.onrender.com
+```
+
+### Local Development
+
+Swagger UI:
 
 ```text
 http://localhost:8000/docs
@@ -182,7 +217,7 @@ OpenAPI schema:
 http://localhost:8000/openapi.json
 ```
 
-The API is currently identified as:
+The API is identified as:
 
 ```text
 E-Commerce REST API
@@ -191,7 +226,7 @@ Version 1.0.0
 
 ## Health Check
 
-The application provides a health endpoint that also checks PostgreSQL connectivity:
+The application provides a health endpoint that also validates PostgreSQL connectivity.
 
 ```http
 GET /health
@@ -238,13 +273,7 @@ Docker Compose starts:
 - PostgreSQL database
 - PostgreSQL test database
 
-The API container automatically runs:
-
-```bash
-alembic upgrade head
-```
-
-before starting Uvicorn.
+The API container automatically applies Alembic migrations before starting Uvicorn.
 
 Check running containers:
 
@@ -258,7 +287,7 @@ Check application health:
 http://localhost:8000/health
 ```
 
-Swagger:
+Open Swagger UI:
 
 ```text
 http://localhost:8000/docs
@@ -278,13 +307,19 @@ Create a virtual environment:
 python -m venv .venv
 ```
 
-Activate it and install dependencies:
+Activate it on Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Configure PostgreSQL and create `.env`.
+Create and configure `.env`.
 
 Apply database migrations:
 
@@ -304,9 +339,15 @@ The API will be available at:
 http://127.0.0.1:8000
 ```
 
+Swagger UI:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
 ## Database Migrations
 
-Alembic is used to manage the PostgreSQL schema.
+Alembic is used to manage the PostgreSQL database schema.
 
 Apply all migrations:
 
@@ -320,7 +361,13 @@ Check the current migration:
 alembic current
 ```
 
-Create a migration after changing SQLAlchemy models:
+Check migration heads:
+
+```bash
+alembic heads
+```
+
+Create a new migration after changing SQLAlchemy models:
 
 ```bash
 alembic revision --autogenerate -m "description"
@@ -333,23 +380,41 @@ The project currently includes **250 automated API tests**.
 Run the full test suite:
 
 ```bash
-pytest -v
+pytest -q
 ```
 
-The tests cover authentication, authorization, products, categories, cart, orders, payments, refunds, promo codes, delivery, shipment tracking, inventory, admin features, audit logging and security behavior.
+The tests cover:
+
+- Authentication and JWT security
+- User management
+- Products and categories
+- Shopping cart
+- Orders
+- Payments and refunds
+- Promo codes
+- Wishlist
+- Reviews and ratings
+- Delivery
+- Shipment tracking
+- Inventory
+- Admin functionality
+- Audit logging
+- Health checks
+- OpenAPI metadata
 
 A separate PostgreSQL test database is available through Docker Compose.
 
 ## Continuous Integration
 
-GitHub Actions automatically runs the automated test suite for repository changes.
+GitHub Actions automatically runs the test suite for repository changes.
 
-The workflow verifies that the application remains stable before changes are merged or released.
+The CI workflow verifies the application against PostgreSQL before changes are considered stable.
 
 ## Project Structure
 
 ```text
 .
+├── .github/
 ├── alembic/
 │   └── versions/
 ├── crud/
@@ -357,6 +422,9 @@ The workflow verifies that the application remains stable before changes are mer
 ├── routers/
 ├── schemas/
 ├── tests/
+├── .dockerignore
+├── .env.example
+├── .gitignore
 ├── alembic.ini
 ├── auth.py
 ├── config.py
@@ -371,44 +439,56 @@ The workflow verifies that the application remains stable before changes are mer
 
 ## Example API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/register` | Register a user |
-| POST | `/login` | Login and receive access/refresh tokens |
-| POST | `/refresh` | Rotate refresh token and issue new tokens |
-| POST | `/logout` | Revoke refresh token |
-| POST | `/logout-all` | Revoke all refresh sessions |
-| GET | `/me` | Get current user |
-| PATCH | `/me` | Update current user profile |
-| PATCH | `/me/password` | Change password |
-| GET | `/sessions` | List active refresh sessions |
-| GET | `/products` | Search and list products |
-| GET | `/products/{product_id}` | Get product |
-| POST | `/products` | Create product |
-| PUT | `/products/{product_id}` | Update product |
-| DELETE | `/products/{product_id}` | Archive product |
-| POST | `/products/{product_id}/restore` | Restore archived product |
-| GET | `/cart` | Get shopping cart |
-| POST | `/cart` | Add item to cart |
-| POST | `/orders` | Create order |
-| GET | `/orders` | Get current user's orders |
-| GET | `/admin/orders` | Admin order management |
-| GET | `/admin/inventory` | Admin inventory endpoints |
-| GET | `/admin/audit-logs` | View audit log |
-| GET | `/health` | Application/database health check |
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| POST | `/register` | Register a new user | Public |
+| POST | `/login` | Login and receive JWT tokens | Public |
+| POST | `/refresh` | Rotate refresh token | Public |
+| POST | `/logout` | Revoke a refresh token | User |
+| POST | `/logout-all` | Revoke all refresh sessions | User |
+| GET | `/me` | Get current user profile | User |
+| PATCH | `/me` | Update current user profile | User |
+| GET | `/sessions` | List active refresh sessions | User |
+| GET | `/products` | Search and list products | Public |
+| GET | `/products/{product_id}` | Get a product | Public |
+| POST | `/products` | Create a product | Authorized |
+| PUT | `/products/{product_id}` | Update a product | Authorized |
+| DELETE | `/products/{product_id}` | Archive a product | Admin |
+| POST | `/products/{product_id}/restore` | Restore a product | Admin |
+| GET | `/cart` | Get shopping cart | User |
+| POST | `/cart` | Add product to cart | User |
+| POST | `/orders` | Create an order | User |
+| GET | `/orders` | Get current user's orders | User |
+| GET | `/admin/orders` | Manage orders | Admin |
+| GET | `/admin/audit-logs` | View audit logs | Admin |
+| GET | `/health` | Check API and database health | Public |
 
-The complete API specification is available through Swagger at `/docs`.
+The complete API specification is available through Swagger UI at `/docs`.
 
-## CI Status
+## Deployment
 
-The repository uses GitHub Actions for continuous integration.
+The production API is deployed on Render using Docker.
 
-Current target release:
+The deployment uses:
+
+- Render Web Service
+- Render PostgreSQL
+- Docker
+- Environment variables for secrets
+- Automatic Alembic migrations during container startup
+- `/health` as the Render health check endpoint
+- Automatic deployment from the `main` branch
+
+## Release
+
+Stable release:
 
 ```text
 v1.0.0
 ```
 
-## License
+The project continues to receive deployment and documentation improvements after the initial release.
 
-This project was created as a backend development portfolio project.
+## Project Purpose
+
+This project was created as a backend development portfolio project to demonstrate practical experience with FastAPI, PostgreSQL, authentication, database design, testing, Docker, CI/CD and deployment.
